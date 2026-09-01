@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Generate a magic link without sending email (bypasses Supabase SMTP rate limit).
+ * Generate a one-time setup link without sending email (bypasses Supabase SMTP rate limit).
  *
  * Usage:
  *   npm run auth:link -- your@email.com
- *   npm run auth:link -- your@email.com INVITE_TOKEN
+ *   npm run auth:link -- your@email.com --local
+ *   npm run auth:link -- your@email.com --production
  *
- * With an invite token, open the generated link in the same browser session
- * after visiting /join?token=INVITE_TOKEN and clicking "Get sign-in link (no email)".
- * Prefer the in-app button on /join — it sets invite cookies automatically.
+ * Opens directly on /auth/callback so the server can set session cookies.
+ * Use --local when running `npm run dev` on this machine (default if SITE_URL unset).
  *
  * Requires SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL in .env.local
  */
@@ -35,22 +35,47 @@ function loadEnvLocal() {
   }
 }
 
+function buildAuthCallbackUrl(siteUrl, hashedToken, verificationType) {
+  const origin = siteUrl.replace(/\/$/, "");
+  const params = new URLSearchParams({
+    token_hash: hashedToken,
+    type: verificationType,
+  });
+  return `${origin}/auth/callback?${params.toString()}`;
+}
+
 loadEnvLocal();
 
-const email = process.argv[2]?.trim().toLowerCase();
-const inviteToken = process.argv[3]?.trim();
+const args = process.argv.slice(2).filter((arg) => !arg.startsWith("-"));
+const flags = new Set(process.argv.slice(2).filter((arg) => arg.startsWith("-")));
+
+const email = args[0]?.trim().toLowerCase();
+const inviteToken = args[1]?.trim();
 
 if (!email || !email.includes("@")) {
-  console.error("Usage: npm run auth:link -- your@email.com [invite-token]");
+  console.error("Usage: npm run auth:link -- your@email.com [--local|--production]");
   process.exit(1);
 }
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const siteUrl = (process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(
-  /\/$/,
+
+const configuredSiteUrl = (
+  process.env.SITE_URL ??
+  process.env.NEXT_PUBLIC_SITE_URL ??
   ""
-);
+).replace(/\/$/, "");
+
+let siteUrl = configuredSiteUrl || "http://localhost:3000";
+if (flags.has("--local")) {
+  siteUrl = "http://localhost:3000";
+} else if (flags.has("--production")) {
+  if (!configuredSiteUrl) {
+    console.error("Set SITE_URL in .env.local to use --production.");
+    process.exit(1);
+  }
+  siteUrl = configuredSiteUrl;
+}
 
 if (!url || !serviceKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local");
@@ -74,20 +99,25 @@ if (error) {
   process.exit(1);
 }
 
-const actionLink = data.properties?.action_link ?? null;
+const hashedToken = data.properties?.hashed_token;
+const verificationType = data.properties?.verification_type;
 
-if (!actionLink) {
-  console.error("No link returned:", JSON.stringify(data, null, 2));
+if (!hashedToken || !verificationType) {
+  console.error("No token returned:", JSON.stringify(data, null, 2));
   process.exit(1);
 }
 
-console.log("\nMagic link (open on this Mac with npm run dev running):\n");
-console.log(actionLink);
+const setupLink = buildAuthCallbackUrl(siteUrl, hashedToken, verificationType);
+
+console.log(`\nTarget app: ${siteUrl}`);
+console.log("(Use --local for npm run dev, or --production for your deployed URL)\n");
+console.log("Setup link (single use, ~1 hour):\n");
+console.log(setupLink);
 
 if (inviteToken) {
   console.log(
-    `\nInvite token provided. Use the in-app button on /join?token=${inviteToken} instead — it sets cookies so the invite is accepted after sign-in.\n`
+    `\nInvite token provided. Prefer the in-app button on /join?token=${inviteToken} — it stores invite cookies automatically.\n`
   );
 } else {
-  console.log("\nExpires in ~1 hour. Single use.\n");
+  console.log("\nAfter opening the link, choose a password if prompted.\n");
 }

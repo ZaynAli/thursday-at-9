@@ -32,12 +32,19 @@ export async function generateMagicLink(email: string): Promise<string> {
     throw new Error(`generateLink failed: ${error.message}`);
   }
 
-  const actionLink = data.properties?.action_link;
-  if (!actionLink) {
-    throw new Error("generateLink returned no action_link");
+  const hashedToken = data.properties?.hashed_token;
+  const verificationType = data.properties?.verification_type;
+
+  if (!hashedToken || !verificationType) {
+    throw new Error("generateLink returned no hashed_token");
   }
 
-  return actionLink;
+  const params = new URLSearchParams({
+    token_hash: hashedToken,
+    type: verificationType,
+  });
+
+  return `${siteUrl}/auth/callback?${params.toString()}`;
 }
 
 /** Sign in via magic link and wait until the app leaves `/auth/callback`. */

@@ -1,5 +1,6 @@
--- Bootstrap Zain as admin after first magic-link sign-in.
--- 1. Sign in at /login with your email (creates auth.users + profiles row via trigger).
+-- Bootstrap Zain as admin after first sign-in.
+-- 1. Run `npm run auth:link -- your@email.com --local` (or `--production`), open the link, choose a password.
+--    (Or accept a manager invite at /join?token=…)
 -- 2. Replace YOUR_EMAIL below, run in Supabase SQL Editor.
 
 DO $$
