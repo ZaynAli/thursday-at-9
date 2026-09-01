@@ -47,6 +47,8 @@ export interface Player {
   isActive: boolean;
   /** Linked app user, if this player has signed up */
   profileId?: string;
+  /** Favorite kit from linked profile — shown on any manager's formation */
+  jerseyId?: JerseyId;
   form: number;
   lastGameweekPoints: number;
   seasonFantasyPoints: number;

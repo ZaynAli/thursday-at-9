@@ -50,10 +50,10 @@ export function JerseyPicker({ currentJerseyId }: JerseyPickerProps) {
     <section className="rounded-lg border border-border bg-surface p-4 space-y-4">
       <div>
         <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase">
-          Formation Jersey
+          Favorite Team Jersey
         </h2>
         <p className="text-sm text-text-muted mt-1">
-          Choose the kit shown on your fantasy formation view.
+          Your kit shows on any manager&apos;s formation when you&apos;re picked.
         </p>
       </div>
 

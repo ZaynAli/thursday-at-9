@@ -1,3 +1,7 @@
+import {
+  enrichPlayersWithJerseys,
+  fetchJerseyIdByProfileId,
+} from "@/lib/data/player-jerseys";
 import { filterUuidIds } from "@/lib/data/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapPlayerRow } from "@/lib/data/mappers/player";
@@ -15,26 +19,33 @@ function throwQueryError(action: string, message: string): never {
 
 export async function fetchRosterPlayers(): Promise<Player[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("players")
-    .select("*")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
+  const [jerseyByProfileId, playersResult] = await Promise.all([
+    fetchJerseyIdByProfileId(),
+    supabase
+      .from("players")
+      .select("*")
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+  ]);
 
+  const { data, error } = playersResult;
   if (error) throwQueryError("Failed to load players", error.message);
-  return ((data ?? []) as PlayerRow[]).map(mapPlayerRow);
+  const players = ((data ?? []) as PlayerRow[]).map(mapPlayerRow);
+  return enrichPlayersWithJerseys(players, jerseyByProfileId);
 }
 
 /** All roster players for admin (includes inactive). */
 export async function fetchAdminRosterPlayers(): Promise<Player[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("players")
-    .select("*")
-    .order("name", { ascending: true });
+  const [jerseyByProfileId, playersResult] = await Promise.all([
+    fetchJerseyIdByProfileId(),
+    supabase.from("players").select("*").order("name", { ascending: true }),
+  ]);
 
+  const { data, error } = playersResult;
   if (error) throwQueryError("Failed to load players", error.message);
-  return ((data ?? []) as PlayerRow[]).map(mapPlayerRow);
+  const players = ((data ?? []) as PlayerRow[]).map(mapPlayerRow);
+  return enrichPlayersWithJerseys(players, jerseyByProfileId);
 }
 
 export async function fetchPlayerById(id: string): Promise<Player | null> {
@@ -66,15 +77,21 @@ export async function fetchPlayerByName(name: string): Promise<Player | null> {
 export async function fetchPlayersByIds(ids: string[]): Promise<Player[]> {
   const uuidIds = filterUuidIds(ids);
   if (uuidIds.length === 0) return [];
-  const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("players")
-    .select("*")
-    .in("id", uuidIds);
 
+  const supabase = createAdminClient();
+  const [jerseyByProfileId, playersResult] = await Promise.all([
+    fetchJerseyIdByProfileId(),
+    supabase.from("players").select("*").in("id", uuidIds),
+  ]);
+
+  const { data, error } = playersResult;
   if (error) throwQueryError("Failed to load players", error.message);
   const rows = (data ?? []) as PlayerRow[];
-  const byId = new Map(rows.map((row) => [row.id, mapPlayerRow(row)]));
+  const byId = new Map(
+    enrichPlayersWithJerseys(rows.map(mapPlayerRow), jerseyByProfileId).map(
+      (player) => [player.id, player]
+    )
+  );
   return uuidIds.map((id) => byId.get(id)).filter(Boolean) as Player[];
 }
 

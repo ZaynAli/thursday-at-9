@@ -1,5 +1,16 @@
 import { getPlayerPrice } from "@/lib/fantasy/pricing";
+import { enrichPlayersWithJerseys } from "@/lib/data/player-jerseys";
+import { resolveJerseyId } from "@/lib/jerseys";
+import { mockProfiles } from "@/data/mock/profiles";
 import type { Player } from "@/types";
+
+const mockJerseyByProfileId = new Map(
+  mockProfiles.map((profile) => [profile.id, resolveJerseyId(profile.jerseyId)])
+);
+
+function withJerseys(players: Player[]): Player[] {
+  return enrichPlayersWithJerseys(players, mockJerseyByProfileId);
+}
 
 function player(
   id: string,
@@ -305,11 +316,11 @@ export function getPlayerById(id: string): Player | undefined {
 }
 
 export function getAvailablePlayers(ids: string[]): Player[] {
-  return mockPlayers.filter((p) => ids.includes(p.id) && p.isActive);
+  return withJerseys(mockPlayers.filter((p) => ids.includes(p.id) && p.isActive));
 }
 
 export function getRosterPlayers(): Player[] {
-  return mockPlayers.filter((p) => p.isActive);
+  return withJerseys(mockPlayers.filter((p) => p.isActive));
 }
 
 export function getPlayersWithoutProfile(): Player[] {

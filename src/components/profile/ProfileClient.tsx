@@ -22,9 +22,7 @@ export function ProfileClient() {
         <SignOutButton />
       </div>
 
-      {profile.isFantasyManager && (
-        <JerseyPicker currentJerseyId={profile.jerseyId} />
-      )}
+      <JerseyPicker currentJerseyId={profile.jerseyId} />
 
       {player && (
         <section>

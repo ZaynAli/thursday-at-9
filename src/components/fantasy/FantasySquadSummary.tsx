@@ -3,7 +3,6 @@
 import { BudgetBar } from "./BudgetBar";
 import { SoccerPitch } from "./SoccerPitch";
 import type { Player } from "@/types";
-import type { JerseyId } from "@/lib/jerseys";
 import { cn } from "@/lib/utils";
 import { SQUAD_SIZE } from "@/lib/constants";
 
@@ -13,8 +12,8 @@ interface FantasySquadSummaryProps {
   budgetRemaining: number;
   squadCost: number;
   onPlayerClick?: (player: Player) => void;
+  onEmptySlotClick?: () => void;
   showPitch?: boolean;
-  jerseyId?: JerseyId;
   className?: string;
 }
 
@@ -24,8 +23,8 @@ export function FantasySquadSummary({
   budgetRemaining,
   squadCost,
   onPlayerClick,
+  onEmptySlotClick,
   showPitch = true,
-  jerseyId,
   className,
 }: FantasySquadSummaryProps) {
   return (
@@ -45,8 +44,8 @@ export function FantasySquadSummary({
         <SoccerPitch
           players={selectedPlayers}
           captainId={captainId}
-          jerseyId={jerseyId}
           onPlayerClick={onPlayerClick}
+          onEmptySlotClick={onEmptySlotClick}
         />
       )}
 

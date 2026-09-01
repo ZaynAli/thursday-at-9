@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { GameweekHeader } from "@/components/home/GameweekHeader";
 import { FantasyPlayerPool } from "@/components/fantasy/FantasyPlayerPool";
 import { FantasySquadSummary } from "@/components/fantasy/FantasySquadSummary";
@@ -50,6 +50,7 @@ export default function FantasyPage() {
   const [mobileView, setMobileView] = useState<MobileView>("players");
   const [detailPlayer, setDetailPlayer] = useState<Player | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const playerPoolRef = useRef<HTMLDivElement>(null);
 
   const {
     selectedPlayers,
@@ -79,6 +80,15 @@ export default function FantasyPage() {
   const openDetail = (player: Player) => {
     setDetailPlayer(player);
     setDetailOpen(true);
+  };
+
+  const openPlayerPool = () => {
+    if (!canEdit || selectedPlayers.length >= 5) return;
+    if (isDesktop) {
+      playerPoolRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setMobileView("players");
   };
 
   if (!hydrated) {
@@ -112,7 +122,7 @@ export default function FantasyPage() {
         />
       ) : isDesktop ? (
         <div className="grid grid-cols-2 gap-6 items-start">
-          <div>
+          <div ref={playerPoolRef}>
             <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-3">
               Player Pool
             </h2>
@@ -133,8 +143,8 @@ export default function FantasyPage() {
               captainId={captainId}
               budgetRemaining={budgetRemaining}
               squadCost={squadCost}
-              jerseyId={user.jerseyId}
               onPlayerClick={canEdit ? openDetail : undefined}
+              onEmptySlotClick={canEdit ? openPlayerPool : undefined}
             />
             <SubmitSection
               canEdit={canEdit}
@@ -197,8 +207,8 @@ export default function FantasyPage() {
                 captainId={captainId}
                 budgetRemaining={budgetRemaining}
                 squadCost={squadCost}
-                jerseyId={user.jerseyId}
                 onPlayerClick={canEdit ? openDetail : undefined}
+                onEmptySlotClick={canEdit ? openPlayerPool : undefined}
               />
               <SubmitSection
                 canEdit={canEdit}
