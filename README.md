@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Thursday@9
 
-## Getting Started
+A private fantasy soccer league app for Thursday night 7v7 games at 9:30 PM.
 
-First, run the development server:
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Supabase
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app runs on **mock data** without Supabase. To connect a project:
 
-## Learn More
+```bash
+cp .env.example .env.local
+# Fill in Supabase URL, anon key, service role key, site URL
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Setup guides:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **[docs/supabase-setup.md](docs/supabase-setup.md)** — project, env, migrations
+- **[docs/auth-setup.md](docs/auth-setup.md)** — magic links, invites, admin bootstrap
+- **[docs/deploy.md](docs/deploy.md)** — Vercel production deploy
+- **[docs/onboarding.md](docs/onboarding.md)** — weekly admin flow
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Set `NEXT_PUBLIC_USE_MOCK_DATA=true` to force mocks even when Supabase is configured.
 
-## Deploy on Vercel
+## Testing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run test:e2e          # Playwright smoke tests
+npm run test:e2e:ui       # Interactive test UI
+npm run auth:link -- you@example.com   # Dev magic link (bypasses email rate limit)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Stack
+
+- Next.js 16 (App Router)
+- React 19 + TypeScript
+- Tailwind CSS v4
+- shadcn/ui
+- Supabase (Auth + PostgreSQL)
+- Playwright (e2e)
+
+## Weekly loop (production)
+
+1. **Admin** — create roster, send manager invites
+2. **Admin** — `/admin/gameweek` — session players, open selection, lock
+3. **Managers** — `/fantasy` — pick and confirm teams
+4. **Admin** — `/admin/results` — enter stats, publish gameweek
+5. **Everyone** — home recap + `/league` standings update
+
+## League rules
+
+Configured in `src/lib/constants.ts`:
+
+- Thursday 9:30 PM kickoff · 8:30 PM fantasy deadline
+- Squad of 5 · $35.0m budget · captain scores 2×
+- Scoring: appearance +2, win +3, draw +1, goal +4, assist +3, stop +2 (max 3)
+
+## Project structure
+
+```
+src/
+├── app/           # Pages (Home, Fantasy, League, Admin, Auth)
+├── components/    # UI by feature
+├── context/       # App session + fantasy team state
+├── lib/data/      # Supabase reads/writes (mock fallback)
+├── lib/fantasy/   # Scoring, pricing, squad validation
+└── types/         # Domain types
+docs/              # Setup, schema, onboarding, deploy
+supabase/          # SQL migrations + seeds
+e2e/               # Playwright tests
+```
+
+## Deploy
+
+See **[docs/deploy.md](docs/deploy.md)** for Vercel + Supabase production checklist.
+
+After initial migration, run **`supabase/migrations/20260831200000_rls_hardening.sql`** for production RLS policies.

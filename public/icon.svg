@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="108" fill="#09090b"/>
+  <circle cx="256" cy="268" r="148" stroke="#a3e635" stroke-width="10" opacity="0.22"/>
+  <path
+    d="M256 120 L256 152 M256 384 L256 416 M120 268 L152 268 M360 268 L392 268"
+    stroke="#a3e635"
+    stroke-width="8"
+    stroke-linecap="round"
+    opacity="0.18"
+  />
+  <text
+    x="256"
+    y="310"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    font-weight="800"
+    font-size="220"
+    fill="#a3e635"
+  >9</text>
+  <text
+    x="256"
+    y="400"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    font-weight="700"
+    font-size="80"
+    fill="#84cc16"
+    letter-spacing="4"
+  >PM</text>
+</svg>
