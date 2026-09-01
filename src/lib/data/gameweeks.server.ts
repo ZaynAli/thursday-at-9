@@ -53,7 +53,7 @@ export async function fetchCurrentGameweek(): Promise<Gameweek | null> {
   if (matchRow) {
     const { data: assignmentRows } = await supabase
       .from("match_players")
-      .select("player_id, team_side")
+      .select("player_id, team_side, position_index")
       .eq("match_id", (matchRow as MatchRow).id);
     matchPlayers = (assignmentRows ?? []) as MatchPlayerRow[];
   }

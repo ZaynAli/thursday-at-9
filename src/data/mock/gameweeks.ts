@@ -1,4 +1,5 @@
-import type { Gameweek, GameweekRecap } from "@/types";
+import type { Gameweek, GameweekRecap, TeamFormation } from "@/types";
+import { buildDefaultFormation } from "@/lib/formations";
 
 export const CURRENT_GAMEWEEK_ID = "gw-8";
 
@@ -50,6 +51,25 @@ export const mockGameweeks: Gameweek[] = [
       abdul: "color",
       ibrahim: "color",
     },
+    teamFormation: buildDefaultFormation(
+      {
+        jimmy: "white",
+        ramis: "white",
+        osama: "white",
+        "ibrahim-o": "white",
+        zain: "white",
+        shaafay: "white",
+        shahrukh: "white",
+        ibtehaj: "color",
+        taha: "color",
+        nikhil: "color",
+        owais: "color",
+        zahin: "color",
+        abdul: "color",
+        ibrahim: "color",
+      },
+      "7v7"
+    ) satisfies TeamFormation,
     availablePlayerIds: [...GW08_PLAYER_IDS],
   },
 ];

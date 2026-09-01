@@ -26,6 +26,7 @@ function toResult<T>(fn: () => Promise<T>): Promise<AdminActionResult<T>> {
 }
 
 function revalidateResultsPaths() {
+  revalidatePath("/game");
   revalidatePath("/");
   revalidatePath("/fantasy");
   revalidatePath("/league");

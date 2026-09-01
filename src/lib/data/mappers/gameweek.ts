@@ -1,6 +1,10 @@
 import { GAME_TIME } from "@/lib/constants";
+import {
+  buildDefaultFormation,
+  formationFromSlotMap,
+} from "@/lib/formations";
 import type { MatchPlayerRow, MatchRow, GameweekRow } from "@/lib/data/db-types";
-import type { Gameweek } from "@/types";
+import type { Gameweek, MatchScores } from "@/types";
 import type { SessionTeam } from "@/lib/session-formats";
 
 export function mapGameweekRow(
@@ -10,9 +14,31 @@ export function mapGameweekRow(
   matchPlayers?: MatchPlayerRow[]
 ): Gameweek {
   const teamAssignments: Record<string, SessionTeam> = {};
-  matchPlayers?.forEach(({ player_id, team_side }) => {
-    teamAssignments[player_id] = team_side === "a" ? "white" : "color";
+  const slotMap: Record<string, { team: SessionTeam; slot: number }> = {};
+
+  matchPlayers?.forEach(({ player_id, team_side, position_index }) => {
+    const team: SessionTeam = team_side === "a" ? "white" : "color";
+    teamAssignments[player_id] = team;
+    if (position_index != null) {
+      slotMap[player_id] = { team, slot: position_index };
+    }
   });
+
+  let teamFormation = Object.keys(slotMap).length
+    ? formationFromSlotMap(slotMap, row.format)
+    : undefined;
+
+  if (!teamFormation && Object.keys(teamAssignments).length > 0) {
+    teamFormation = buildDefaultFormation(teamAssignments, row.format);
+  }
+
+  const matchScores: MatchScores | undefined =
+    match?.team_a_score != null || match?.team_b_score != null
+      ? {
+          white: match?.team_a_score ?? null,
+          color: match?.team_b_score ?? null,
+        }
+      : undefined;
 
   return {
     id: row.id,
@@ -27,5 +53,7 @@ export function mapGameweekRow(
     teamColorName: match?.team_b_name,
     teamAssignments:
       Object.keys(teamAssignments).length > 0 ? teamAssignments : undefined,
+    teamFormation,
+    matchScores,
   };
 }

@@ -48,6 +48,7 @@ export interface MatchRow {
 export interface MatchPlayerRow {
   player_id: string;
   team_side: "a" | "b";
+  position_index: number | null;
 }
 
 export interface InviteRow {

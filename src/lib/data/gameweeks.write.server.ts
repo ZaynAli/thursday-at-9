@@ -4,6 +4,11 @@ import { mapGameweekRow } from "@/lib/data/mappers/gameweek";
 import { fetchCurrentGameweek } from "@/lib/data/gameweeks.server";
 import type { GameweekRow } from "@/lib/data/db-types";
 import {
+  buildDefaultFormation,
+  formationToSlotMap,
+  type TeamFormation,
+} from "@/lib/formations";
+import {
   SESSION_TEAM_TO_DB_SIDE,
   isTeamSetupComplete,
   type GameFormat,
@@ -134,7 +139,8 @@ async function upsertMatchAndAssignments(
   teamWhiteName: string,
   teamColorName: string,
   selectedPlayerIds: string[],
-  assignments: TeamAssignments
+  assignments: TeamAssignments,
+  format: GameFormat
 ): Promise<void> {
   const supabase = createAdminClient();
 
@@ -186,19 +192,39 @@ async function upsertMatchAndAssignments(
     throwGameweekError("Failed to update team assignments", deleteAssignmentsError.message);
   }
 
-  const rows = selectedPlayerIds
-    .map((playerId) => {
-      const team = assignments[playerId];
-      if (team !== "white" && team !== "color") return null;
-      return {
-        match_id: matchId!,
-        player_id: playerId,
-        team_side: SESSION_TEAM_TO_DB_SIDE[team],
-      };
-    })
-    .filter((row): row is { match_id: string; player_id: string; team_side: "a" | "b" } =>
-      Boolean(row)
-    );
+  const defaultFormation = buildDefaultFormation(
+    Object.fromEntries(
+      selectedPlayerIds
+        .map((playerId) => {
+          const team = assignments[playerId];
+          if (team !== "white" && team !== "color") return null;
+          return [playerId, team] as const;
+        })
+        .filter((entry): entry is [string, "white" | "color"] => Boolean(entry))
+    ),
+    format
+  );
+
+  const slotMap = formationToSlotMap(defaultFormation);
+
+  const rows: {
+    match_id: string;
+    player_id: string;
+    team_side: "a" | "b";
+    position_index: number | null;
+  }[] = [];
+
+  for (const playerId of selectedPlayerIds) {
+    const team = assignments[playerId];
+    if (team !== "white" && team !== "color") continue;
+    const slot = slotMap[playerId]?.slot;
+    rows.push({
+      match_id: matchId!,
+      player_id: playerId,
+      team_side: SESSION_TEAM_TO_DB_SIDE[team],
+      position_index: slot ?? null,
+    });
+  }
 
   if (rows.length === 0) return;
 
@@ -231,13 +257,17 @@ async function loadGameweekById(gameweekId: string): Promise<Gameweek> {
     supabase.from("matches").select("*").eq("gameweek_id", gameweekId).maybeSingle(),
   ]);
 
-  let matchPlayers: { player_id: string; team_side: "a" | "b" }[] = [];
+  let matchPlayers: { player_id: string; team_side: "a" | "b"; position_index: number | null }[] = [];
   if (matchRow) {
     const { data: assignmentRows } = await supabase
       .from("match_players")
-      .select("player_id, team_side")
+      .select("player_id, team_side, position_index")
       .eq("match_id", matchRow.id);
-    matchPlayers = (assignmentRows ?? []) as { player_id: string; team_side: "a" | "b" }[];
+    matchPlayers = (assignmentRows ?? []) as {
+      player_id: string;
+      team_side: "a" | "b";
+      position_index: number | null;
+    }[];
   }
 
   return mapGameweekRow(
@@ -297,7 +327,8 @@ export async function saveGameweekSession(
     input.teamWhiteName,
     input.teamColorName,
     input.selectedPlayerIds,
-    input.assignments
+    input.assignments,
+    input.format
   );
 
   return loadGameweekById(gameweekId!);
@@ -379,4 +410,43 @@ export async function fetchLatestGameweekNotification(
     sentAt: data.sent_at,
     recipientCount: data.recipient_count,
   };
+}
+
+export async function updateMatchFormation(
+  gameweekId: string,
+  formation: TeamFormation
+): Promise<Gameweek> {
+  if (!gameweekId || gameweekId === "draft") {
+    throw new Error("Save the session before editing formation.");
+  }
+
+  const supabase = createAdminClient();
+  const { data: matchRow, error: matchError } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("gameweek_id", gameweekId)
+    .maybeSingle();
+
+  if (matchError) throwGameweekError("Failed to load match", matchError.message);
+  if (!matchRow?.id) throw new Error("No match found for this gameweek.");
+
+  const slotMap = formationToSlotMap(formation);
+  const updates = Object.entries(slotMap);
+
+  for (const [playerId, { team, slot }] of updates) {
+    const { error } = await supabase
+      .from("match_players")
+      .update({
+        team_side: SESSION_TEAM_TO_DB_SIDE[team],
+        position_index: slot,
+      })
+      .eq("match_id", matchRow.id)
+      .eq("player_id", playerId);
+
+    if (error) {
+      throwGameweekError("Failed to update formation", error.message);
+    }
+  }
+
+  return loadGameweekById(gameweekId);
 }

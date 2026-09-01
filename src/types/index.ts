@@ -88,6 +88,16 @@ export interface Profile {
 
 export type GameFormat = "5v5" | "6v6" | "7v7" | "8v8" | "9v9";
 
+export interface TeamFormation {
+  white: (string | null)[];
+  color: (string | null)[];
+}
+
+export interface MatchScores {
+  white: number | null;
+  color: number | null;
+}
+
 export interface Gameweek {
   id: string;
   number: number;
@@ -100,6 +110,9 @@ export interface Gameweek {
   teamWhiteName?: string;
   teamColorName?: string;
   teamAssignments?: Record<string, "white" | "color">;
+  /** Pitch slot layout — 2-3-2 for 7v7 */
+  teamFormation?: TeamFormation;
+  matchScores?: MatchScores;
 }
 
 export interface MatchResult {
