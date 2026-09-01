@@ -64,13 +64,51 @@ export async function fetchProfilesByPlayerIds(
   return map;
 }
 
+async function ensureProfileForAuthUser(user: {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+}): Promise<Profile> {
+  const displayName =
+    (typeof user.user_metadata?.display_name === "string"
+      ? user.user_metadata.display_name
+      : null) ??
+    user.email?.split("@")[0] ??
+    "Manager";
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("profiles")
+    .upsert(
+      {
+        id: user.id,
+        display_name: displayName,
+        initials,
+      },
+      { onConflict: "id" }
+    )
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to bootstrap profile: ${error.message}`);
+  }
+
+  return mapProfileRow(data as ProfileRow);
+}
+
 export async function fetchAuthProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  return fetchProfileById(user.id);
+
+  const profile = await fetchProfileById(user.id);
+  if (profile) return profile;
+
+  return ensureProfileForAuthUser(user);
 }
 
 export async function enableFantasyManagerForPlayer(playerId: string): Promise<Profile> {

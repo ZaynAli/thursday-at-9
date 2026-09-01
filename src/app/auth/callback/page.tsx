@@ -1,101 +1,52 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { AuthCallbackClient } from "@/app/auth/callback/AuthCallbackClient";
 import { finalizeAuthCallback } from "@/lib/auth/finalize-callback.server";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 
-async function waitForSession(
-  supabase: ReturnType<typeof createClient>,
-  timeoutMs = 3000
-): Promise<boolean> {
-  const existing = (await supabase.auth.getSession()).data.session;
-  if (existing) return true;
-
-  return new Promise((resolve) => {
-    const timeout = window.setTimeout(() => {
-      subscription.unsubscribe();
-      resolve(false);
-    }, timeoutMs);
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        window.clearTimeout(timeout);
-        subscription.unsubscribe();
-        resolve(true);
-      }
-    });
-  });
+interface AuthCallbackPageProps {
+  searchParams: Promise<{
+    code?: string;
+    token_hash?: string;
+    type?: string;
+    error?: string;
+    error_description?: string;
+  }>;
 }
 
-export default function AuthCallbackPage() {
-  const router = useRouter();
-  const started = useRef(false);
+export default async function AuthCallbackPage({
+  searchParams,
+}: AuthCallbackPageProps) {
+  const params = await searchParams;
 
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
+  if (params.error) {
+    redirect("/login?error=auth");
+  }
 
-    async function completeSignIn() {
-      const supabase = createClient();
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-      const tokenHash = params.get("token_hash");
-      const type = params.get("type");
-
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          router.replace("/login?error=auth");
-          return;
-        }
-      } else if (tokenHash && type) {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: type as EmailOtpType,
-        });
-        if (error) {
-          router.replace("/login?error=auth");
-          return;
-        }
-      } else if (window.location.hash) {
-        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-        const accessToken = hash.get("access_token");
-        const refreshToken = hash.get("refresh_token");
-
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) {
-            router.replace("/login?error=auth");
-            return;
-          }
-        }
-      }
-
-      const hasSession = await waitForSession(supabase);
-      if (!hasSession) {
-        router.replace("/login?error=missing_code");
-        return;
-      }
-
-      const { redirectTo } = await finalizeAuthCallback();
-      router.replace(redirectTo);
+  if (params.code) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+    if (error) {
+      redirect("/login?error=auth");
     }
 
-    completeSignIn().catch(() => {
-      router.replace("/login?error=auth");
-    });
-  }, [router]);
+    const { redirectTo } = await finalizeAuthCallback();
+    redirect(redirectTo);
+  }
 
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center">
-      <p className="text-sm text-text-muted">Signing you in…</p>
-    </div>
-  );
+  if (params.token_hash && params.type) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: params.token_hash,
+      type: params.type as EmailOtpType,
+    });
+    if (error) {
+      redirect("/login?error=auth");
+    }
+
+    const { redirectTo } = await finalizeAuthCallback();
+    redirect(redirectTo);
+  }
+
+  return <AuthCallbackClient />;
 }
