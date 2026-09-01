@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Trophy, Users, User, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/context/AppSessionContext";
 import { LEAGUE_NAME } from "@/lib/constants";
-import { getNavItemsForUser } from "@/lib/nav";
+import { getNavItemsForUser, isNavItemActive } from "@/lib/nav";
 
 export function DesktopSidebar() {
   const pathname = usePathname();
@@ -27,7 +26,7 @@ export function DesktopSidebar() {
         {/* Nav */}
         <nav className="flex-1 space-y-1">
           {items.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
+            const active = isNavItemActive(pathname, href);
             return (
               <Link
                 key={href}
@@ -45,24 +44,6 @@ export function DesktopSidebar() {
             );
           })}
         </nav>
-
-        {/* Admin link */}
-        {user?.isAdmin && (
-          <div className="mt-auto pt-4 border-t border-sidebar-border">
-            <Link
-              href="/admin"
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
-                pathname.startsWith("/admin")
-                  ? "bg-sidebar-accent text-lime"
-                  : "text-text-muted hover:bg-sidebar-accent hover:text-text-secondary"
-              )}
-            >
-              <Shield className="h-4 w-4" />
-              Admin
-            </Link>
-          </div>
-        )}
       </div>
     </aside>
   );

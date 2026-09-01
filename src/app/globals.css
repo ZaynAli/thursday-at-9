@@ -171,6 +171,10 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
   .safe-bottom {
     padding-bottom: calc(env(safe-area-inset-bottom, 1.25rem) + 5.75rem);
   }

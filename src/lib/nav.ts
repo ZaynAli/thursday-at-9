@@ -1,4 +1,4 @@
-import { Home, Trophy, Users, User, LogIn, type LucideIcon } from "lucide-react";
+import { Home, Trophy, Users, User, LogIn, Shield, type LucideIcon } from "lucide-react";
 import type { Profile } from "@/types";
 
 export interface NavItem {
@@ -14,6 +14,11 @@ const allNavItems: NavItem[] = [
   { href: "/profile", label: "Profile", icon: User },
 ];
 
+export function isNavItemActive(pathname: string, href: string): boolean {
+  if (href === "/admin") return pathname.startsWith("/admin");
+  return pathname === href;
+}
+
 export function getNavItemsForUser(user: Profile | null): NavItem[] {
   if (!user) {
     return [
@@ -23,7 +28,13 @@ export function getNavItemsForUser(user: Profile | null): NavItem[] {
     ];
   }
 
-  return allNavItems.filter(
+  const items = allNavItems.filter(
     (item) => item.href !== "/fantasy" || user.isFantasyManager
   );
+
+  if (user.isAdmin) {
+    items.push({ href: "/admin", label: "Admin", icon: Shield });
+  }
+
+  return items;
 }
