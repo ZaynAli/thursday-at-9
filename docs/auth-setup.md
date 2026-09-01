@@ -94,6 +94,6 @@ Supabase's default email sender allows **~2 auth emails per hour** per project. 
 **When rate limited during invite setup:**
 
 1. **Local dev on `/join`:** enter email → **Get setup link (no email)** → **Open setup link**
-2. **Terminal:** `npm run auth:link -- your@email.com --local` (local dev) or `--production` (deployed site)
+2. **Terminal:** `npm run auth:link -- your@email.com --production` (requires `PRODUCTION_SITE_URL` in `.env.local`, or pass `--url https://thursday-at-9.vercel.app`)
 3. **Wait ~1 hour** for the Supabase email quota to reset
 4. **Long-term:** custom SMTP (e.g. [Resend](https://resend.com) free tier) in **Supabase → Authentication → SMTP**

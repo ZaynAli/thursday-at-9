@@ -3,14 +3,14 @@
  * Generate a one-time setup link without sending email (bypasses Supabase SMTP rate limit).
  *
  * Usage:
- *   npm run auth:link -- your@email.com
  *   npm run auth:link -- your@email.com --local
  *   npm run auth:link -- your@email.com --production
+ *   npm run auth:link -- your@email.com --url https://thursday-at-9.vercel.app
  *
  * Opens directly on /auth/callback so the server can set session cookies.
- * Use --local when running `npm run dev` on this machine (default if SITE_URL unset).
  *
  * Requires SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL in .env.local
+ * For --production, set PRODUCTION_SITE_URL in .env.local or pass --url.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -44,38 +44,102 @@ function buildAuthCallbackUrl(siteUrl, hashedToken, verificationType) {
   return `${origin}/auth/callback?${params.toString()}`;
 }
 
+function getFlagValue(name) {
+  const argv = process.argv.slice(2);
+  const idx = argv.indexOf(name);
+  if (idx !== -1 && argv[idx + 1] && !argv[idx + 1].startsWith("-")) {
+    return argv[idx + 1];
+  }
+  const prefixed = argv.find((arg) => arg.startsWith(`${name}=`));
+  if (prefixed) return prefixed.slice(name.length + 1);
+  return null;
+}
+
+function isLocalOrigin(origin) {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+function normalizeOrigin(origin) {
+  return origin.replace(/\/$/, "");
+}
+
+function resolveSiteUrl({ flags, explicitUrl, configuredSiteUrl }) {
+  if (flags.has("--local")) {
+    return "http://localhost:3000";
+  }
+
+  if (explicitUrl) {
+    return normalizeOrigin(explicitUrl);
+  }
+
+  if (flags.has("--production")) {
+    const candidates = [
+      process.env.PRODUCTION_SITE_URL,
+      configuredSiteUrl && !isLocalOrigin(configuredSiteUrl) ? configuredSiteUrl : null,
+    ].filter(Boolean);
+
+    if (candidates.length === 0) {
+      console.error(
+        [
+          "Production URL not configured.",
+          "",
+          "Add to .env.local:",
+          "  PRODUCTION_SITE_URL=https://thursday-at-9.vercel.app",
+          "",
+          "Or pass explicitly:",
+          "  npm run auth:link -- your@email.com --production --url https://thursday-at-9.vercel.app",
+        ].join("\n")
+      );
+      process.exit(1);
+    }
+
+    return normalizeOrigin(candidates[0]);
+  }
+
+  if (configuredSiteUrl && !isLocalOrigin(configuredSiteUrl)) {
+    return configuredSiteUrl;
+  }
+
+  console.warn(
+    "Defaulting to http://localhost:3000. Pass --production or --url for deployed app.\n"
+  );
+  return "http://localhost:3000";
+}
+
 loadEnvLocal();
 
-const args = process.argv.slice(2).filter((arg) => !arg.startsWith("-"));
-const flags = new Set(process.argv.slice(2).filter((arg) => arg.startsWith("-")));
+const argv = process.argv.slice(2);
+const flags = new Set(argv.filter((arg) => arg.startsWith("-") && !arg.includes("@")));
+const args = argv.filter(
+  (arg) =>
+    !arg.startsWith("-") &&
+    arg !== getFlagValue("--url")
+);
+const explicitUrl = getFlagValue("--url");
 
 const email = args[0]?.trim().toLowerCase();
 const inviteToken = args[1]?.trim();
 
 if (!email || !email.includes("@")) {
-  console.error("Usage: npm run auth:link -- your@email.com [--local|--production]");
+  console.error(
+    "Usage: npm run auth:link -- your@email.com [--local|--production] [--url https://your-app.vercel.app]"
+  );
   process.exit(1);
 }
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const configuredSiteUrl = (
-  process.env.SITE_URL ??
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  ""
-).replace(/\/$/, "");
+const configuredSiteUrl = normalizeOrigin(
+  process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ""
+);
 
-let siteUrl = configuredSiteUrl || "http://localhost:3000";
-if (flags.has("--local")) {
-  siteUrl = "http://localhost:3000";
-} else if (flags.has("--production")) {
-  if (!configuredSiteUrl) {
-    console.error("Set SITE_URL in .env.local to use --production.");
-    process.exit(1);
-  }
-  siteUrl = configuredSiteUrl;
-}
+const siteUrl = resolveSiteUrl({ flags, explicitUrl, configuredSiteUrl });
 
 if (!url || !serviceKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local");
@@ -110,7 +174,11 @@ if (!hashedToken || !verificationType) {
 const setupLink = buildAuthCallbackUrl(siteUrl, hashedToken, verificationType);
 
 console.log(`\nTarget app: ${siteUrl}`);
-console.log("(Use --local for npm run dev, or --production for your deployed URL)\n");
+if (isLocalOrigin(siteUrl)) {
+  console.log("Local link — open while `npm run dev` is running.\n");
+} else {
+  console.log("Production link — open in your browser.\n");
+}
 console.log("Setup link (single use, ~1 hour):\n");
 console.log(setupLink);
 
