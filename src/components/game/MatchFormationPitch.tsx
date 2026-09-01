@@ -33,51 +33,73 @@ function FormationPlayer({
 }: FormationPlayerProps) {
   const isEmpty = !player;
   const kitId = resolveSessionTeamKit(team, teamWhiteName);
+  const isTopTeam = team === "color";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!editable && !onClick}
+    <div
       className={cn(
-        "absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2",
-        editable && "cursor-pointer",
-        editable && "active:scale-95 transition-transform",
-        selected && "z-10",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50 rounded-lg"
+        "absolute -translate-x-1/2",
+        isTopTeam ? "-translate-y-full" : "",
+        isTopTeam ? "z-20" : "z-10",
+        selected && "z-30"
       )}
       style={{ left: `${x}%`, top: `${y}%` }}
     >
-      {isEmpty ? (
-        <div
-          className={cn(
-            "h-11 w-11 rounded-full border border-dashed flex items-center justify-center",
-            editable
-              ? "border-pitch-line/60 text-text-muted/50"
-              : "border-pitch-line/30 text-text-muted/30"
-          )}
-        />
-      ) : (
-        <>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={!editable && !onClick}
+        className={cn(
+          "flex flex-col items-center",
+          isTopTeam && "flex-col-reverse",
+          editable && "cursor-pointer",
+          editable && "active:scale-95 transition-transform",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-lime/50 rounded-lg"
+        )}
+      >
+        {isEmpty ? (
           <div
             className={cn(
-              "relative rounded-full",
-              selected && "ring-2 ring-lime ring-offset-2 ring-offset-transparent",
-              team === "white" && editable && !selected && "ring-1 ring-white/20",
-              team === "color" && editable && !selected && "ring-1 ring-sky-400/30"
+              "h-10 w-10 rounded-full border border-dashed flex items-center justify-center",
+              editable
+                ? "border-pitch-line/60 text-text-muted/50"
+                : "border-pitch-line/30 text-text-muted/30"
             )}
-          >
-            <TeamKitIcon kitId={kitId} size="sm" />
-          </div>
-          <span className="mt-1 text-[10px] font-semibold text-text-primary whitespace-nowrap max-w-[4.5rem] truncate">
-            {player.name.split(" ")[0]}
-          </span>
-          {statLine && (
-            <span className="text-[9px] font-medium text-lime tabular-nums">{statLine}</span>
-          )}
-        </>
-      )}
-    </button>
+          />
+        ) : (
+          <>
+            <div
+              className={cn(
+                "relative rounded-full shrink-0",
+                selected && "ring-2 ring-lime ring-offset-2 ring-offset-transparent",
+                team === "white" && editable && !selected && "ring-1 ring-white/20",
+                team === "color" && editable && !selected && "ring-1 ring-sky-400/30"
+              )}
+            >
+              <TeamKitIcon kitId={kitId} size="sm" />
+            </div>
+            <span
+              className={cn(
+                "text-[10px] font-semibold text-text-primary whitespace-nowrap max-w-[4.5rem] truncate",
+                isTopTeam ? "mb-1" : "mt-1"
+              )}
+            >
+              {player.name.split(" ")[0]}
+            </span>
+            {statLine && (
+              <span
+                className={cn(
+                  "text-[9px] font-medium text-lime tabular-nums",
+                  isTopTeam ? "mb-0.5" : ""
+                )}
+              >
+                {statLine}
+              </span>
+            )}
+          </>
+        )}
+      </button>
+    </div>
   );
 }
 
@@ -110,7 +132,13 @@ export function MatchFormationPitch({
   const colorSlots = getFormationSlots("color", format);
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className={cn("relative w-full pt-5 pb-5", className)}>
+      <div className="absolute top-0 inset-x-0 z-10 flex justify-center pointer-events-none">
+        <span className="text-[10px] font-semibold tracking-wider uppercase text-sky-300/90 bg-surface px-2.5 py-0.5 rounded border border-border/60">
+          {teamColorName}
+        </span>
+      </div>
+
       <div className="relative aspect-[3/4] sm:aspect-[4/5] w-full max-w-lg mx-auto">
         <svg
           viewBox="0 0 100 130"
@@ -132,16 +160,6 @@ export function MatchFormationPitch({
           <rect x="25" y="110" width="50" height="18" fill="none" stroke="rgba(163,230,53,0.12)" strokeWidth="0.3" />
         </svg>
 
-        <div className="absolute top-2 inset-x-0 flex justify-center pointer-events-none">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-sky-300/90 bg-black/40 px-2 py-0.5 rounded">
-            {teamColorName}
-          </span>
-        </div>
-        <div className="absolute bottom-2 inset-x-0 flex justify-center pointer-events-none">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-white/90 bg-black/40 px-2 py-0.5 rounded">
-            {teamWhiteName}
-          </span>
-        </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
           <span className="text-[9px] font-medium tracking-[0.2em] text-text-muted/60 uppercase">
             {getFormationLabel(format)}
@@ -149,32 +167,6 @@ export function MatchFormationPitch({
         </div>
 
         <div className="absolute inset-0">
-          {colorSlots.map((slot) => {
-            const playerId = formation.color[slot.index];
-            const player = playerId ? playersById.get(playerId) ?? null : null;
-            const isSelected =
-              selectedSlot?.team === "color" && selectedSlot.slot === slot.index;
-
-            return (
-              <FormationPlayer
-                key={`color-${slot.index}`}
-                player={player}
-                x={slot.x}
-                y={slot.y}
-                team="color"
-                teamWhiteName={teamWhiteName}
-                selected={isSelected}
-                editable={editable}
-                statLine={playerId ? playerStatLines?.[playerId] : undefined}
-                onClick={
-                  editable || onSlotClick
-                    ? () => onSlotClick?.("color", slot.index)
-                    : undefined
-                }
-              />
-            );
-          })}
-
           {whiteSlots.map((slot) => {
             const playerId = formation.white[slot.index];
             const player = playerId ? playersById.get(playerId) ?? null : null;
@@ -200,7 +192,39 @@ export function MatchFormationPitch({
               />
             );
           })}
+
+          {colorSlots.map((slot) => {
+            const playerId = formation.color[slot.index];
+            const player = playerId ? playersById.get(playerId) ?? null : null;
+            const isSelected =
+              selectedSlot?.team === "color" && selectedSlot.slot === slot.index;
+
+            return (
+              <FormationPlayer
+                key={`color-${slot.index}`}
+                player={player}
+                x={slot.x}
+                y={slot.y}
+                team="color"
+                teamWhiteName={teamWhiteName}
+                selected={isSelected}
+                editable={editable}
+                statLine={playerId ? playerStatLines?.[playerId] : undefined}
+                onClick={
+                  editable || onSlotClick
+                    ? () => onSlotClick?.("color", slot.index)
+                    : undefined
+                }
+              />
+            );
+          })}
         </div>
+      </div>
+
+      <div className="absolute bottom-0 inset-x-0 z-10 flex justify-center pointer-events-none">
+        <span className="text-[10px] font-semibold tracking-wider uppercase text-white/90 bg-surface px-2.5 py-0.5 rounded border border-border/60">
+          {teamWhiteName}
+        </span>
       </div>
     </div>
   );

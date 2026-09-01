@@ -32,14 +32,14 @@ const ROW_ROLES: FormationRole[] = ["DEF", "MID", "FWD"];
 
 const WHITE_Y: Record<FormationRole, number> = {
   DEF: 88,
-  MID: 72,
-  FWD: 55,
+  MID: 66,
+  FWD: 54,
 };
 
 const COLOR_Y: Record<FormationRole, number> = {
   DEF: 12,
-  MID: 28,
-  FWD: 45,
+  MID: 34,
+  FWD: 46,
 };
 
 function rowXPositions(count: number): number[] {
