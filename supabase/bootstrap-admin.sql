@@ -26,8 +26,8 @@ BEGIN
   SET
     is_admin = true,
     is_fantasy_manager = true,
-    display_name = COALESCE(display_name, 'Zain'),
-    initials = COALESCE(initials, 'ZA'),
+    display_name = 'Zain',
+    initials = 'ZA',
     player_id = v_player_id
   WHERE id = v_user_id;
 

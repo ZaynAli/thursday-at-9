@@ -16,9 +16,20 @@ function profileRoleLabel(profile: Profile): string | null {
   return null;
 }
 
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
 export function ProfileHeader({ profile, linkedPlayer, className }: ProfileHeaderProps) {
-  const player = linkedPlayer;
   const role = profileRoleLabel(profile);
+  const displayName = linkedPlayer?.name ?? profile.name;
+  const avatarInitials = linkedPlayer
+    ? initialsFromName(linkedPlayer.name)
+    : profile.initials;
 
   return (
     <div className={cn("flex items-center gap-4", className)}>
@@ -29,11 +40,11 @@ export function ProfileHeader({ profile, linkedPlayer, className }: ProfileHeade
           color: profile.avatarColor,
         }}
       >
-        {profile.initials}
+        {avatarInitials}
       </div>
       <div>
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-2xl font-bold tracking-tight">{profile.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
           {role && (
             <Badge
               variant="outline"
@@ -43,10 +54,13 @@ export function ProfileHeader({ profile, linkedPlayer, className }: ProfileHeade
             </Badge>
           )}
         </div>
-        {player && (
+        {profile.email && (
+          <p className="text-sm text-text-muted mt-0.5">{profile.email}</p>
+        )}
+        {linkedPlayer && (
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs text-text-muted">Fantasy Price</span>
-            <PlayerPrice price={player.price} size="md" />
+            <PlayerPrice price={linkedPlayer.price} size="md" />
           </div>
         )}
       </div>

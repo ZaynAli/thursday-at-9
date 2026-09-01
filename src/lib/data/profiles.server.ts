@@ -106,9 +106,10 @@ export async function fetchAuthProfile(): Promise<Profile | null> {
   if (!user) return null;
 
   const profile = await fetchProfileById(user.id);
-  if (profile) return profile;
+  const resolved =
+    profile ?? (await ensureProfileForAuthUser(user));
 
-  return ensureProfileForAuthUser(user);
+  return user.email ? { ...resolved, email: user.email } : resolved;
 }
 
 export async function enableFantasyManagerForPlayer(playerId: string): Promise<Profile> {

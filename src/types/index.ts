@@ -62,6 +62,8 @@ export interface Profile {
   isAdmin: boolean;
   /** Picks a weekly fantasy team */
   isFantasyManager: boolean;
+  /** Signed-in email — from auth session, not stored on profiles */
+  email?: string;
   /** Linked real soccer player record, if they play */
   playerId?: string;
   /** Fantasy manager stats — present when isFantasyManager is true */
