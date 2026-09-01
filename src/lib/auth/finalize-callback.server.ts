@@ -7,7 +7,12 @@ import {
   AUTH_REDIRECT_COOKIE,
   sanitizeRedirectPath,
 } from "@/lib/auth/pending-redirect";
+import { userNeedsPasswordSetup } from "@/lib/auth/password";
 import { createClient } from "@/lib/supabase/server";
+
+function redirectAfterAuth(next: string): string {
+  return `/login/set-password?next=${encodeURIComponent(next)}`;
+}
 
 export async function finalizeAuthCallback(): Promise<{ redirectTo: string }> {
   const cookieStore = await cookies();
@@ -17,25 +22,27 @@ export async function finalizeAuthCallback(): Promise<{ redirectTo: string }> {
   cookieStore.delete(AUTH_REDIRECT_COOKIE);
   cookieStore.delete(AUTH_INVITE_COOKIE);
 
-  if (invite) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user) {
-      try {
-        await acceptManagerInvite(invite, user.id);
-      } catch (err) {
-        const message =
-          err instanceof InviteAcceptError ? err.message : "Could not accept invite.";
-        const params = new URLSearchParams({
-          token: invite,
-          error: message,
-        });
-        return { redirectTo: `/join?${params.toString()}` };
-      }
+  if (invite && user) {
+    try {
+      await acceptManagerInvite(invite, user.id);
+    } catch (err) {
+      const message =
+        err instanceof InviteAcceptError ? err.message : "Could not accept invite.";
+      const params = new URLSearchParams({
+        token: invite,
+        error: message,
+      });
+      return { redirectTo: `/join?${params.toString()}` };
     }
+  }
+
+  if (user && userNeedsPasswordSetup(user)) {
+    return { redirectTo: redirectAfterAuth(next) };
   }
 
   return { redirectTo: next };

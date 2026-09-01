@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { LoginForm } from "@/components/auth/LoginForm";
-import { isLocalDevSite } from "@/lib/auth/site-url";
+import { PasswordLoginForm } from "@/components/auth/PasswordLoginForm";
+import { userNeedsPasswordSetup } from "@/lib/auth/password";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/data";
+import { useMockData } from "@/lib/data/config";
 
 interface LoginPageProps {
   searchParams: Promise<{ next?: string; error?: string }>;
@@ -12,15 +14,28 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const redirectTo = params.next?.startsWith("/") ? params.next : "/";
 
+  if (user && !useMockData()) {
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+
+    if (authUser && userNeedsPasswordSetup(authUser)) {
+      redirect(`/login/set-password?next=${encodeURIComponent(redirectTo)}`);
+    }
+
+    redirect(redirectTo);
+  }
+
   if (user) {
     redirect(redirectTo);
   }
 
   const errorMessage =
     params.error === "auth"
-      ? "Sign-in link expired or invalid. Request a new one."
+      ? "Setup link expired or invalid. Ask the admin for a new manager invite."
       : params.error === "missing_code"
-        ? "Sign-in could not be completed. Generate a fresh link with npm run auth:link -- your@email.com and open it on this Mac in any browser."
+        ? "Sign-in could not be completed. Open your manager invite link again."
         : undefined;
 
   return (
@@ -31,7 +46,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             {errorMessage}
           </p>
         )}
-        <LoginForm redirectTo={redirectTo} isLocalDev={isLocalDevSite()} />
+        <PasswordLoginForm redirectTo={redirectTo} />
       </div>
     </div>
   );

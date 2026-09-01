@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { InviteSetupForm } from "@/components/auth/InviteSetupForm";
 import { isLocalDevSite } from "@/lib/auth/site-url";
 import { getCurrentUser } from "@/lib/data";
 import { fetchInviteByToken } from "@/lib/data/invites.server";
@@ -105,12 +105,12 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
             {params.error}
           </p>
         )}
-        <LoginForm
+        <InviteSetupForm
           inviteToken={token}
           redirectTo="/"
           isLocalDev={isLocalDevSite()}
           title="Accept manager invite"
-          description="Sign in with your email to link your profile and pick fantasy teams."
+          description="We'll email you a one-time link to verify your email. Then you'll choose a password for future sign-ins."
           playerName={playerName}
         />
       </div>

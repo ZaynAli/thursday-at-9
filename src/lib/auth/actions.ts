@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { validatePassword } from "@/lib/auth/password";
 import { createClient } from "@/lib/supabase/server";
 import {
   AUTH_INVITE_COOKIE,
@@ -39,6 +40,67 @@ export async function signOut(): Promise<void> {
     await supabase.auth.signOut();
   }
   redirect("/login");
+}
+
+export type AuthActionResult = { error: string } | void;
+
+export async function signInWithPasswordAction(
+  email: string,
+  password: string,
+  redirectTo = "/"
+): Promise<AuthActionResult> {
+  if (useMockData()) {
+    return { error: "Sign-in requires Supabase." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+
+  if (error) {
+    const message = error.message.toLowerCase().includes("invalid login")
+      ? "Incorrect email or password. First time? Use your manager invite link to set up."
+      : error.message;
+    return { error: message };
+  }
+
+  redirect(sanitizeRedirectPath(redirectTo));
+}
+
+export async function setPasswordAction(
+  password: string,
+  redirectTo = "/"
+): Promise<AuthActionResult> {
+  if (useMockData()) {
+    return { error: "Password setup requires Supabase." };
+  }
+
+  const validationError = validatePassword(password);
+  if (validationError) {
+    return { error: validationError };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Your session expired. Open your invite link again." };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password,
+    data: { password_set: true },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect(sanitizeRedirectPath(redirectTo));
 }
 
 export type SignInState =

@@ -49,3 +49,18 @@ export async function signInWithMagicLink(page: Page, email: string): Promise<vo
     { timeout: 20_000 }
   );
 }
+
+/** Complete first-time setup if the app asks for a password. */
+export async function completePasswordSetupIfNeeded(
+  page: Page,
+  password = "test-password-123"
+): Promise<void> {
+  if (!page.url().includes("/login/set-password")) return;
+
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm password").fill(password);
+  await page.getByRole("button", { name: "Save password" }).click();
+  await page.waitForURL((url) => !url.pathname.startsWith("/login/set-password"), {
+    timeout: 15_000,
+  });
+}

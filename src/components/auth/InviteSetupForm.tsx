@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { Mail, Loader2, Link2, Copy, Check } from "lucide-react";
 import {
   generateDevMagicLinkAction,
@@ -14,24 +13,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LEAGUE_NAME } from "@/lib/constants";
 
-interface LoginFormProps {
+interface InviteSetupFormProps {
   redirectTo?: string;
-  inviteToken?: string;
+  inviteToken: string;
   title?: string;
   description?: string;
   playerName?: string;
-  /** Show local-dev guidance when magic links only work on this machine. */
   isLocalDev?: boolean;
 }
 
-export function LoginForm({
+export function InviteSetupForm({
   redirectTo = "/",
   inviteToken,
-  title = "Sign in",
-  description = "We'll email you a magic link — no password needed.",
+  title = "Accept manager invite",
+  description = "We'll email you a one-time link to verify your email. Then you'll choose a password.",
   playerName,
   isLocalDev = false,
-}: LoginFormProps) {
+}: InviteSetupFormProps) {
   const [state, setState] = useState<SignInState>({ status: "idle" });
   const [pending, setPending] = useState(false);
   const [devLink, setDevLink] = useState<string | null>(null);
@@ -74,7 +72,7 @@ export function LoginForm({
       if (error) {
         const isRateLimit = error.message.toLowerCase().includes("rate limit");
         const message = isRateLimit
-          ? "Email rate limit reached (~2/hour on Supabase free email). Use “Get sign-in link (no email)” below instead."
+          ? "Email rate limit reached (~2/hour on Supabase's built-in email). In local dev, use “Get setup link (no email)” below."
           : error.message;
         setState({ status: "error", message });
       } else {
@@ -83,7 +81,7 @@ export function LoginForm({
     } catch {
       setState({
         status: "error",
-        message: "Could not send magic link. Try again.",
+        message: "Could not send setup link. Try again.",
       });
     } finally {
       setPending(false);
@@ -150,8 +148,9 @@ export function LoginForm({
           <Mail className="h-8 w-8 text-lime mx-auto" />
           <p className="text-sm font-medium">Check your email</p>
           <p className="text-xs text-text-muted">
-            We sent a sign-in link to{" "}
-            <span className="text-foreground">{state.email}</span>.
+            We sent a one-time setup link to{" "}
+            <span className="text-foreground">{state.email}</span>. After you
+            verify, you&apos;ll choose a password for future sign-ins.
           </p>
         </div>
       ) : (
@@ -186,7 +185,7 @@ export function LoginForm({
                 Sending link…
               </>
             ) : (
-              "Send magic link"
+              "Send setup link"
             )}
           </Button>
         </form>
@@ -209,7 +208,7 @@ export function LoginForm({
             ) : (
               <Link2 className="h-4 w-4" />
             )}
-            Get sign-in link (no email)
+            Get setup link (no email)
           </Button>
           {devLinkError && (
             <p className="text-sm text-destructive">{devLinkError}</p>
@@ -218,7 +217,7 @@ export function LoginForm({
             <div className="space-y-2">
               <div className="rounded-lg bg-surface border border-border p-3">
                 <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  Dev sign-in link
+                  Dev setup link
                 </p>
                 <p className="text-xs text-text-secondary break-all font-mono">
                   {devLink}
@@ -246,25 +245,14 @@ export function LoginForm({
                   window.location.href = devLink;
                 }}
               >
-                Open sign-in link
+                Open setup link
               </Button>
-              {inviteToken && (
-                <p className="text-xs text-text-muted text-center">
-                  Invite will be accepted automatically after sign-in.
-                </p>
-              )}
+              <p className="text-xs text-text-muted text-center">
+                Invite will be accepted automatically after verification.
+              </p>
             </div>
           )}
         </div>
-      )}
-
-      {!inviteToken && (
-        <p className="text-center text-xs text-text-muted">
-          Roster-only players don&apos;t need an account.{" "}
-          <Link href="/" className="text-lime hover:underline">
-            Back to home
-          </Link>
-        </p>
       )}
     </div>
   );

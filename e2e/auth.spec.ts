@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { hasSupabaseTestEnv } from "./helpers/env";
-import { signInWithMagicLink } from "./helpers/auth";
+import { signInWithMagicLink, completePasswordSetupIfNeeded } from "./helpers/auth";
 
 const testEmail = process.env.PLAYWRIGHT_TEST_EMAIL?.trim().toLowerCase();
 
@@ -19,6 +19,25 @@ test.describe("Supabase auth", () => {
     test.skip(!testEmail, "PLAYWRIGHT_TEST_EMAIL is empty");
 
     await signInWithMagicLink(page, testEmail!);
+    await completePasswordSetupIfNeeded(page);
+    await expect(page).not.toHaveURL(/\/login/);
+    await expect(page.getByText(/sign in to pick teams/i)).not.toBeVisible();
+  });
+
+  test("password sign-in works after setup", async ({ page }) => {
+    test.skip(!testEmail, "PLAYWRIGHT_TEST_EMAIL is empty");
+
+    const password = process.env.PLAYWRIGHT_TEST_PASSWORD ?? "test-password-123";
+
+    await signInWithMagicLink(page, testEmail!);
+    await completePasswordSetupIfNeeded(page, password);
+
+    await page.context().clearCookies();
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(testEmail!);
+    await page.getByLabel("Password").fill(password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+
     await expect(page).not.toHaveURL(/\/login/);
     await expect(page.getByText(/sign in to pick teams/i)).not.toBeVisible();
   });

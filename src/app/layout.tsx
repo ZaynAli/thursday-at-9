@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { PasswordSetupGate } from "@/components/auth/PasswordSetupGate";
 import { AppShell } from "@/components/layout/AppShell";
 import { AppSessionProvider } from "@/context/AppSessionContext";
 import { FantasyTeamProvider } from "@/context/FantasyTeamContext";
 import { LEAGUE_NAME } from "@/lib/constants";
+import { getAuthUserNeedsPasswordSetup } from "@/lib/auth/session.server";
 import { getDataSource } from "@/lib/data/config";
 import {
   getAvailablePlayers,
@@ -56,8 +58,9 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [currentUser, gameweek, rosterPlayers] = await Promise.all([
+  const [currentUser, needsPasswordSetup, gameweek, rosterPlayers] = await Promise.all([
     getCurrentUser(),
+    getAuthUserNeedsPasswordSetup(),
     getCurrentGameweek(),
     getRosterPlayers(),
   ]);
@@ -93,12 +96,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <AppSessionProvider value={session}>
-          <FantasyTeamProvider
-            initialTeam={initialFantasyTeam}
-            visibleTeams={visibleFantasyTeams}
-          >
-            <AppShell>{children}</AppShell>
-          </FantasyTeamProvider>
+          <PasswordSetupGate needsPasswordSetup={needsPasswordSetup}>
+            <FantasyTeamProvider
+              initialTeam={initialFantasyTeam}
+              visibleTeams={visibleFantasyTeams}
+            >
+              <AppShell>{children}</AppShell>
+            </FantasyTeamProvider>
+          </PasswordSetupGate>
         </AppSessionProvider>
       </body>
     </html>
