@@ -14,6 +14,7 @@ const managerStats = (
   recent: number[],
   recentGws: number[]
 ) => ({
+  jerseyId: "manutd" as const,
   managerRank: rank,
   totalFantasyPoints: total,
   averageGameweekPoints: avg,

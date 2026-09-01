@@ -1,6 +1,7 @@
 "use client";
 
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { JerseyPicker } from "@/components/profile/JerseyPicker";
 import { RecentForm } from "@/components/profile/RecentForm";
 import { StatCard } from "@/components/shared/StatCard";
 import { SignOutButton } from "@/components/auth/SignOutButton";
@@ -20,6 +21,10 @@ export function ProfileClient() {
         <ProfileHeader profile={profile} linkedPlayer={player} />
         <SignOutButton />
       </div>
+
+      {profile.isFantasyManager && (
+        <JerseyPicker currentJerseyId={profile.jerseyId} />
+      )}
 
       {player && (
         <section>

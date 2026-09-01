@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_JERSEY_ID } from "@/lib/jerseys";
 import { mapProfileRow } from "@/lib/data/mappers/profile";
 import type { ProfileRow } from "@/lib/data/db-types";
 import type { Profile } from "@/types";
@@ -85,6 +86,7 @@ async function ensureProfileForAuthUser(user: {
         id: user.id,
         display_name: displayName,
         initials,
+        jersey_id: DEFAULT_JERSEY_ID,
       },
       { onConflict: "id" }
     )
@@ -142,4 +144,23 @@ export async function enableFantasyManagerForPlayer(playerId: string): Promise<P
   }
 
   return mapProfileRow(updated as ProfileRow);
+}
+
+export async function updateProfileJersey(
+  profileId: string,
+  jerseyId: string
+): Promise<Profile> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ jersey_id: jerseyId })
+    .eq("id", profileId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update jersey: ${error.message}`);
+  }
+
+  return mapProfileRow(data as ProfileRow);
 }

@@ -1,4 +1,8 @@
+import type { JerseyId } from "@/lib/jerseys";
+
 export type InviteStatus = "pending" | "accepted" | "expired";
+
+export type { JerseyId };
 
 /** Invite for a roster player to sign up as profile + fantasy manager */
 export interface ManagerInvite {
@@ -64,6 +68,8 @@ export interface Profile {
   isFantasyManager: boolean;
   /** Signed-in email — from auth session, not stored on profiles */
   email?: string;
+  /** Jersey shown on the fantasy formation view */
+  jerseyId: JerseyId;
   /** Linked real soccer player record, if they play */
   playerId?: string;
   /** Fantasy manager stats — present when isFantasyManager is true */

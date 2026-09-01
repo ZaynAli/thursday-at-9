@@ -133,6 +133,7 @@ export default function FantasyPage() {
               captainId={captainId}
               budgetRemaining={budgetRemaining}
               squadCost={squadCost}
+              jerseyId={user.jerseyId}
               onPlayerClick={canEdit ? openDetail : undefined}
             />
             <SubmitSection
@@ -196,6 +197,7 @@ export default function FantasyPage() {
                 captainId={captainId}
                 budgetRemaining={budgetRemaining}
                 squadCost={squadCost}
+                jerseyId={user.jerseyId}
                 onPlayerClick={canEdit ? openDetail : undefined}
               />
               <SubmitSection

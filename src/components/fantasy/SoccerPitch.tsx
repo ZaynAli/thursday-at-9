@@ -1,7 +1,8 @@
 "use client";
 
 import type { Player } from "@/types";
-import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
+import type { JerseyId } from "@/lib/jerseys";
+import { JerseyIcon } from "@/components/shared/JerseyIcon";
 import { PlayerPrice } from "@/components/shared/PlayerPrice";
 import { CaptainBadge } from "@/components/fantasy/CaptainBadge";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ interface PitchPlayerProps {
   player: Player;
   positionIndex: number;
   isCaptain: boolean;
+  jerseyId?: JerseyId;
   onClick?: () => void;
   empty?: boolean;
 }
@@ -27,6 +29,7 @@ export function PitchPlayer({
   player,
   positionIndex,
   isCaptain,
+  jerseyId,
   onClick,
   empty = false,
 }: PitchPlayerProps) {
@@ -55,12 +58,16 @@ export function PitchPlayer({
       )}
       style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
     >
-      <div className="relative">
-        <PlayerAvatar
-          initials={player.initials}
-          size="lg"
-          isCaptain={isCaptain}
-        />
+      <div
+        className={cn(
+          "relative",
+          isCaptain && "rounded-full ring-2 ring-lime ring-offset-2 ring-offset-transparent"
+        )}
+      >
+        <JerseyIcon jerseyId={jerseyId} size="lg" />
+        <span className="absolute inset-x-0 top-[38%] -translate-y-1/2 text-center text-[9px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none">
+          {player.initials}
+        </span>
       </div>
       <span className="mt-1.5 text-xs font-semibold text-text-primary whitespace-nowrap">
         {player.name.split(" ")[0]}
@@ -78,6 +85,7 @@ export function PitchPlayer({
 interface SoccerPitchProps {
   players: (Player | null)[];
   captainId?: string;
+  jerseyId?: JerseyId;
   onPlayerClick?: (player: Player) => void;
   className?: string;
 }
@@ -85,6 +93,7 @@ interface SoccerPitchProps {
 export function SoccerPitch({
   players,
   captainId,
+  jerseyId,
   onPlayerClick,
   className,
 }: SoccerPitchProps) {
@@ -157,6 +166,7 @@ export function SoccerPitch({
                 player={player}
                 positionIndex={i}
                 isCaptain={player.id === captainId}
+                jerseyId={jerseyId}
                 onClick={() => onPlayerClick?.(player)}
               />
             ) : (

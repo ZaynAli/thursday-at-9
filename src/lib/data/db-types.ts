@@ -18,6 +18,7 @@ export interface ProfileRow {
   is_admin: boolean;
   is_fantasy_manager: boolean;
   player_id: string | null;
+  jersey_id: string;
   created_at: string;
   updated_at: string;
 }
