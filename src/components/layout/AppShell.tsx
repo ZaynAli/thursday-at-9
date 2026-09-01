@@ -34,7 +34,7 @@ export function AppShell({ children, className = "" }: AppShellProps) {
     <div className="min-h-screen bg-background stadium-gradient">
       <DesktopSidebar />
       <main
-        className={`lg:pl-56 min-h-screen safe-bottom lg:pb-0 lg:safe-bottom-0 ${className}`}
+        className={`lg:pl-56 min-h-screen safe-bottom ${className}`}
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <GameweekOpenBanner />

@@ -13,17 +13,19 @@ export function MobileBottomNav() {
   const navItems = getNavItemsForUser(user);
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 lg:hidden border-t border-border bg-surface/95 backdrop-blur-md">
-      <div className="flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom,0px)]">
+    <nav className="fixed bottom-0 inset-x-0 z-50 lg:hidden border-t border-border bg-surface mobile-nav-inset">
+      <div className="flex items-stretch justify-around px-1 pt-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
+              prefetch
               className={cn(
-                "flex flex-1 flex-col items-center gap-0.5 py-2.5 px-1 transition-colors",
-                active ? "text-lime" : "text-text-muted active:text-text-secondary"
+                "flex min-h-12 min-w-[3.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1.5 select-none",
+                "active:opacity-70 active:scale-[0.97] transition-[opacity,transform] duration-75",
+                active ? "text-lime" : "text-text-muted"
               )}
             >
               <Icon
@@ -36,7 +38,7 @@ export function MobileBottomNav() {
         })}
       </div>
       {user?.isAdmin && pathname.startsWith("/admin") && (
-        <div className="absolute -top-px left-0 right-0 h-px bg-lime/30" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-lime/30" />
       )}
     </nav>
   );

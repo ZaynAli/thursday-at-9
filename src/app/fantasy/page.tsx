@@ -212,7 +212,7 @@ export default function FantasyPage() {
           )}
 
           {mobileView === "players" && (
-            <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 z-40 px-4 lg:hidden">
+            <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,1.25rem))] inset-x-0 z-40 px-4 lg:hidden">
               <div className="surface-card p-3 border border-border/80 backdrop-blur-md bg-surface/95 shadow-lg">
                 <BudgetBar
                   selectedCount={selectedPlayers.length}
