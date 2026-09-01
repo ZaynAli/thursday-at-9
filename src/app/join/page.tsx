@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { isLocalDevSite } from "@/lib/auth/site-url";
 import { getCurrentUser } from "@/lib/data";
 import { fetchInviteByToken } from "@/lib/data/invites.server";
 import { useMockData } from "@/lib/data/config";
@@ -107,12 +108,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
         <LoginForm
           inviteToken={token}
           redirectTo="/"
-          isLocalDev={
-            process.env.NODE_ENV === "development" &&
-            (process.env.NEXT_PUBLIC_SITE_URL?.includes("localhost") ||
-              process.env.NEXT_PUBLIC_SITE_URL?.includes("127.0.0.1") ||
-              false)
-          }
+          isLocalDev={isLocalDevSite()}
           title="Accept manager invite"
           description="Sign in with your email to link your profile and pick fantasy teams."
           playerName={playerName}

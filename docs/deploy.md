@@ -53,7 +53,7 @@ Free Supabase email is rate-limited (~2/hour). For ~20 friends in production:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (**secret**) |
-| `NEXT_PUBLIC_SITE_URL` | `https://your-domain.com` |
+| `SITE_URL` | `https://your-domain.com` |
 
 4. Deploy
 
@@ -124,6 +124,6 @@ npm run icons:generate
 
 **Permission denied on reads/writes** — Run `supabase/grants-service-role.sql`.
 
-**Magic link redirects to wrong URL** — Check `NEXT_PUBLIC_SITE_URL` matches deployed origin.
+**Magic link redirects to wrong URL** — Check `SITE_URL` matches deployed origin (or remove it — the app auto-detects from Vercel headers).
 
 **Admin can't save** — Confirm `bootstrap-admin.sql` ran and profile has `is_admin = true`.

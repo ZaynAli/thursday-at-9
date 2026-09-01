@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getPlayerPrice } from "@/lib/fantasy/pricing";
-import { MANAGER_INVITE_DESCRIPTION } from "@/lib/onboarding";
+import { MANAGER_INVITE_DESCRIPTION } from "@/lib/onboarding.constants";
 import {
   enableManagerAction,
   sendManagerInviteAction,

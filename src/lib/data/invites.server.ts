@@ -4,14 +4,14 @@ import { buildManagerInviteUrl } from "@/lib/onboarding";
 import type { InviteRow } from "@/lib/data/db-types";
 import type { ManagerInvite } from "@/types";
 
-function mapInviteRow(row: InviteRow, playerName: string): ManagerInvite {
+async function mapInviteRow(row: InviteRow, playerName: string): Promise<ManagerInvite> {
   return {
     id: row.id,
     playerId: row.player_id,
     playerName,
     status: row.status,
     token: row.token,
-    inviteUrl: buildManagerInviteUrl(row.token),
+    inviteUrl: await buildManagerInviteUrl(row.token),
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     acceptedAt: row.accepted_at ?? undefined,
@@ -53,10 +53,10 @@ export async function fetchPendingInvitesByPlayerIds(
   if (error) throw new Error(`Failed to load invites: ${error.message}`);
 
   const map = new Map<string, ManagerInvite>();
-  ((data ?? []) as InviteRow[]).forEach((row) => {
+  for (const row of (data ?? []) as InviteRow[]) {
     const name = playerNames.get(row.player_id) ?? "Player";
-    map.set(row.player_id, mapInviteRow(row, name));
-  });
+    map.set(row.player_id, await mapInviteRow(row, name));
+  }
   return map;
 }
 
@@ -91,9 +91,11 @@ export async function fetchPendingInvites(): Promise<ManagerInvite[]> {
 
   if (error) throw new Error(`Failed to load invites: ${error.message}`);
 
-  return ((data ?? []) as (InviteRow & { players: { name: string } | null })[]).map(
-    (row) => mapInviteRow(row, row.players?.name ?? "Player")
-  );
+  const invites: ManagerInvite[] = [];
+  for (const row of (data ?? []) as (InviteRow & { players: { name: string } | null })[]) {
+    invites.push(await mapInviteRow(row, row.players?.name ?? "Player"));
+  }
+  return invites;
 }
 
 const INVITE_TTL_MS = 30 * 86400000;

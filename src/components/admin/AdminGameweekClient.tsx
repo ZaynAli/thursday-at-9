@@ -11,7 +11,7 @@ import {
   openGameweekSelectionAction,
   saveGameweekSessionAction,
 } from "@/lib/admin/gameweek-actions";
-import { NOTIFY_MESSAGE_TEMPLATE } from "@/lib/onboarding";
+import { NOTIFY_MESSAGE_TEMPLATE } from "@/lib/onboarding.constants";
 import {
   type GameFormat,
   type SessionTeam,

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { isLocalDevSite } from "@/lib/auth/site-url";
 import { getCurrentUser } from "@/lib/data";
 
 interface LoginPageProps {
@@ -22,11 +23,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ? "Sign-in could not be completed. Generate a fresh link with npm run auth:link -- your@email.com and open it on this Mac in any browser."
         : undefined;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  const isLocalDev =
-    process.env.NODE_ENV === "development" &&
-    (siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1"));
-
   return (
     <div className="flex min-h-[60vh] items-center justify-center py-12">
       <div className="space-y-4">
@@ -35,7 +31,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             {errorMessage}
           </p>
         )}
-        <LoginForm redirectTo={redirectTo} isLocalDev={isLocalDev} />
+        <LoginForm redirectTo={redirectTo} isLocalDev={isLocalDevSite()} />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import type { ManagerInvite, GameweekNotification } from "@/types";
-import { buildManagerInviteUrl } from "@/lib/onboarding";
+import { buildManagerInviteUrlSync } from "@/lib/onboarding";
 
 /** Pending manager invites — sent from a player's admin page */
 export const mockPendingInvites: ManagerInvite[] = [
@@ -9,7 +9,7 @@ export const mockPendingInvites: ManagerInvite[] = [
     playerName: "Hassan",
     status: "pending",
     token: "mgr_hassan_static",
-    inviteUrl: buildManagerInviteUrl("mgr_hassan_static"),
+    inviteUrl: buildManagerInviteUrlSync("mgr_hassan_static"),
     createdAt: "2026-08-27T09:00:00Z",
     expiresAt: "2026-09-27T09:00:00Z",
   },
