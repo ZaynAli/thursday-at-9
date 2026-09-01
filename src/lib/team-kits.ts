@@ -5,12 +5,13 @@ export type TeamKitId = "white" | "black" | "colors";
 export interface TeamKit {
   id: TeamKitId;
   label: string;
+  image: string;
 }
 
 const KITS: Record<TeamKitId, TeamKit> = {
-  white: { id: "white", label: "White" },
-  black: { id: "black", label: "Black" },
-  colors: { id: "colors", label: "Colours" },
+  white: { id: "white", label: "White", image: "/white.png" },
+  black: { id: "black", label: "Black", image: "/black.png" },
+  colors: { id: "colors", label: "Colours", image: "/red.png" },
 };
 
 export function getTeamKit(id: TeamKitId): TeamKit {
