@@ -10,7 +10,7 @@ interface AppShellProps {
   className?: string;
 }
 
-const MINIMAL_SHELL_PATHS = ["/login", "/join"];
+const MINIMAL_SHELL_PATHS = ["/login", "/join", "/auth/callback"];
 
 export function AppShell({ children, className = "" }: AppShellProps) {
   const pathname = usePathname();
