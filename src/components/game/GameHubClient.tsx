@@ -126,6 +126,11 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
         return;
       }
 
+      if (selectedSlot.team !== team) {
+        setSelectedSlot({ team, slot });
+        return;
+      }
+
       const next = swapFormationSlots(formation, selectedSlot, { team, slot });
       setSelectedSlot(null);
       persistFormation(next);
@@ -220,7 +225,7 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
           </h2>
           {isAdmin && (
             <p className="text-[10px] text-text-muted text-right">
-              {isPending ? "Saving…" : "Tap a player, then tap a slot to move"}
+              {isPending ? "Saving…" : "Tap a player, then another slot on the same team"}
             </p>
           )}
         </div>

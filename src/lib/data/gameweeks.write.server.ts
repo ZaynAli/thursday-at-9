@@ -430,17 +430,25 @@ export async function updateMatchFormation(
   if (matchError) throwGameweekError("Failed to load match", matchError.message);
   if (!matchRow?.id) throw new Error("No match found for this gameweek.");
 
-  const slotMap = formationToSlotMap(formation);
-  const updates = Object.entries(slotMap);
+  const matchId = matchRow.id;
 
-  for (const [playerId, { team, slot }] of updates) {
+  // Clear slots first so same-team swaps don't hit the unique (match, side, slot) index.
+  const { error: clearError } = await supabase
+    .from("match_players")
+    .update({ position_index: null })
+    .eq("match_id", matchId);
+
+  if (clearError) {
+    throwGameweekError("Failed to update formation", clearError.message);
+  }
+
+  const slotMap = formationToSlotMap(formation);
+
+  for (const [playerId, { slot }] of Object.entries(slotMap)) {
     const { error } = await supabase
       .from("match_players")
-      .update({
-        team_side: SESSION_TEAM_TO_DB_SIDE[team],
-        position_index: slot,
-      })
-      .eq("match_id", matchRow.id)
+      .update({ position_index: slot })
+      .eq("match_id", matchId)
       .eq("player_id", playerId);
 
     if (error) {

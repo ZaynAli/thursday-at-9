@@ -67,7 +67,7 @@ function FormationPlayer({
               team === "color" && editable && !selected && "ring-1 ring-sky-400/30"
             )}
           >
-            <TeamKitIcon kitId={kitId} size="md" />
+            <TeamKitIcon kitId={kitId} size="sm" />
           </div>
           <span className="mt-1 text-[10px] font-semibold text-text-primary whitespace-nowrap max-w-[4.5rem] truncate">
             {player.name.split(" ")[0]}
