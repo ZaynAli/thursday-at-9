@@ -17,7 +17,7 @@ export function RecentForm({ profile, className }: RecentFormProps) {
   return (
     <div className={cn("surface-card p-4", className)}>
       <h3 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-4">
-        Recent Form
+        Recent Gameweeks
       </h3>
 
       <div className="flex items-end gap-2 h-24">

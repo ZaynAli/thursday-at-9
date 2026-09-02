@@ -20,7 +20,6 @@ interface FantasyPlayerPoolProps {
 }
 
 const sortOptions: { field: SortField; label: string }[] = [
-  { field: "form", label: "Form" },
   { field: "price", label: "Price" },
   { field: "totalPoints", label: "Points" },
   { field: "ownership", label: "Owned" },
@@ -37,7 +36,7 @@ export function FantasyPlayerPool({
   variant = "desktop",
 }: FantasyPlayerPoolProps) {
   const [priceFilter, setPriceFilter] = useState<number | "all">("all");
-  const [sortField, setSortField] = useState<SortField>("form");
+  const [sortField, setSortField] = useState<SortField>("totalPoints");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
   const filtered = useMemo(() => {
@@ -48,9 +47,6 @@ export function FantasyPlayerPool({
     result.sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
-        case "form":
-          cmp = a.form - b.form;
-          break;
         case "price":
           cmp = a.price - b.price;
           break;
@@ -123,11 +119,6 @@ export function FantasyPlayerPool({
                 <th className="py-3 text-right font-medium">
                   <button onClick={() => toggleSort("price")} className="hover:text-text-secondary">
                     Price
-                  </button>
-                </th>
-                <th className="py-3 text-right font-medium">
-                  <button onClick={() => toggleSort("form")} className="hover:text-text-secondary">
-                    Form
                   </button>
                 </th>
                 <th className="py-3 text-right font-medium">

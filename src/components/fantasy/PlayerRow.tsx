@@ -3,7 +3,6 @@
 import type { Player } from "@/types";
 import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
 import { PlayerPrice } from "@/components/shared/PlayerPrice";
-import { PlayerForm } from "@/components/shared/PlayerForm";
 import { CaptainBadge } from "@/components/fantasy/CaptainBadge";
 import { Button } from "@/components/ui/button";
 import { Check, Plus, Minus } from "lucide-react";
@@ -52,10 +51,6 @@ export function PlayerRow({
             {isCaptain && <CaptainBadge />}
           </div>
           <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
-            <span>
-              Form <PlayerForm form={player.form} />
-            </span>
-            <span>·</span>
             <span>LW {player.lastGameweekPoints} pts</span>
           </div>
           {unaffordableReason && !isSelected && (
@@ -114,9 +109,6 @@ export function PlayerRow({
       </td>
       <td className="py-3 text-right">
         <PlayerPrice price={player.price} size="sm" />
-      </td>
-      <td className="py-3 text-right">
-        <PlayerForm form={player.form} />
       </td>
       <td className="py-3 text-right tabular-nums text-sm text-text-secondary">
         {player.lastGameweekPoints}

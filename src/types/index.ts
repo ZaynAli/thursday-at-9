@@ -183,7 +183,7 @@ export interface GameweekRecap {
   userRankMovement: number;
 }
 
-export type SortField = "form" | "price" | "totalPoints" | "ownership";
+export type SortField = "price" | "totalPoints" | "ownership";
 export type SortDirection = "asc" | "desc";
 
 export interface AdminGameweekDraft {
