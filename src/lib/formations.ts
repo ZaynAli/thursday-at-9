@@ -31,13 +31,13 @@ const FORMATION_BY_COUNT: Record<number, FormationShape> = {
 const ROW_ROLES: FormationRole[] = ["DEF", "MID", "FWD"];
 
 const WHITE_Y: Record<FormationRole, number> = {
-  DEF: 88,
+  DEF: 78,
   MID: 66,
   FWD: 54,
 };
 
 const COLOR_Y: Record<FormationRole, number> = {
-  DEF: 12,
+  DEF: 22,
   MID: 34,
   FWD: 46,
 };
