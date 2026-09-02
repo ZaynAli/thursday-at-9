@@ -12,7 +12,6 @@ import { updateMatchFormationAction } from "@/lib/admin/game-actions";
 import { formatGameDate } from "@/lib/gameweek-timing";
 import {
   buildDefaultFormation,
-  getFormationLabel,
   swapFormationSlots,
   type TeamFormation,
 } from "@/lib/formations";
@@ -211,10 +210,9 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
       )}
 
       {!hasScores && !gameFinished && (
-        <section className="grid grid-cols-3 gap-3">
+        <section className="grid grid-cols-2 gap-3">
           <StatCard label="Format" value={gameweek.format} />
           <StatCard label="Players" value={gameweek.availablePlayerIds.length} highlight />
-          <StatCard label="Formation" value={getFormationLabel(gameweek.format)} />
         </section>
       )}
 

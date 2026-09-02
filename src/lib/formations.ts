@@ -45,10 +45,10 @@ const COLOR_Y: Record<FormationRole, number> = {
 function rowXPositions(count: number): number[] {
   if (count <= 0) return [];
   if (count === 1) return [50];
-  if (count === 2) return [35, 65];
-  if (count === 3) return [20, 50, 80];
-  if (count === 4) return [15, 38, 62, 85];
-  return Array.from({ length: count }, (_, i) => 10 + ((i + 1) / (count + 1)) * 80);
+  if (count === 2) return [40, 60];
+  if (count === 3) return [30, 50, 70];
+  if (count === 4) return [22, 40, 60, 78];
+  return Array.from({ length: count }, (_, i) => 15 + ((i + 1) / (count + 1)) * 70);
 }
 
 function getFormationShape(count: number): FormationShape {

@@ -12,31 +12,42 @@ export function MobileBottomNav() {
   const navItems = getNavItemsForUser(user);
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 lg:hidden border-t border-border bg-surface mobile-nav-inset">
-      <div className="flex items-stretch justify-around px-1 pt-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = isNavItemActive(pathname, href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              prefetch
-              className={cn(
-                "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-0.5 py-1.5 select-none",
-                "active:opacity-70 active:scale-[0.97] transition-[opacity,transform] duration-75",
-                active ? "text-lime" : "text-text-muted"
-              )}
-            >
-              <Icon
-                className={cn("h-5 w-5 shrink-0", active && "drop-shadow-[0_0_6px_rgba(163,230,53,0.4)]")}
-                strokeWidth={active ? 2.5 : 2}
-              />
-              <span className="text-[10px] font-medium tracking-wide truncate max-w-full">
-                {label}
-              </span>
-            </Link>
-          );
-        })}
+    <nav
+      aria-label="Main navigation"
+      className="fixed inset-x-0 bottom-0 z-50 lg:hidden pointer-events-none mobile-nav-inset"
+    >
+      <div className="mx-auto flex justify-center px-5 pb-1">
+        <div
+          className={cn(
+            "pointer-events-auto flex items-center gap-0.5 rounded-full p-1.5",
+            "border border-white/10 bg-surface/85 backdrop-blur-xl",
+            "shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)]"
+          )}
+        >
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = isNavItemActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                prefetch
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                title={label}
+                className={cn(
+                  "flex h-11 w-11 items-center justify-center rounded-full select-none",
+                  "transition-[color,background-color,transform] duration-150",
+                  "active:scale-95",
+                  active
+                    ? "bg-white/12 text-text-primary"
+                    : "text-text-muted hover:text-text-secondary"
+                )}
+              >
+                <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

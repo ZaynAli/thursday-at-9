@@ -2,7 +2,7 @@
 
 import type { Player } from "@/types";
 import type { SessionTeam } from "@/lib/session-formats";
-import { getFormationLabel, getFormationSlots } from "@/lib/formations";
+import { getFormationSlots } from "@/lib/formations";
 import type { TeamFormation } from "@/types";
 import { TeamKitIcon } from "@/components/shared/TeamKitIcon";
 import { resolveSessionTeamKit } from "@/lib/team-kits";
@@ -159,12 +159,6 @@ export function MatchFormationPitch({
           <rect x="25" y="2" width="50" height="18" fill="none" stroke="rgba(163,230,53,0.12)" strokeWidth="0.3" />
           <rect x="25" y="110" width="50" height="18" fill="none" stroke="rgba(163,230,53,0.12)" strokeWidth="0.3" />
         </svg>
-
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-          <span className="text-[9px] font-medium tracking-[0.2em] text-text-muted/60 uppercase">
-            {getFormationLabel(format)}
-          </span>
-        </div>
 
         <div className="absolute inset-0">
           {whiteSlots.map((slot) => {
