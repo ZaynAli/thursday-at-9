@@ -11,12 +11,37 @@ import { useAppSession, useCurrentUser } from "@/context/AppSessionContext";
 import { useFantasyTeamContext } from "@/context/FantasyTeamContext";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { hasLineups } from "@/lib/game/status";
 import type { ManagerFantasyTeamView } from "@/lib/data/fantasy-teams";
 import type { Player } from "@/types";
 import { cn } from "@/lib/utils";
 import { Users, LayoutGrid, CheckCircle2, Loader2, Lock } from "lucide-react";
 
 type MobileView = "players" | "team";
+
+function FantasyNotReady({
+  title,
+  description,
+  gameweekNumber,
+}: {
+  title: string;
+  description: string;
+  gameweekNumber: number;
+}) {
+  return (
+    <div className="space-y-6 animate-slide-up">
+      <header>
+        <p className="text-[10px] font-semibold tracking-[0.25em] text-text-muted uppercase mb-1">
+          Fantasy
+        </p>
+        <h1 className="text-2xl font-bold">
+          Gameweek {String(gameweekNumber).padStart(2, "0")}
+        </h1>
+      </header>
+      <EmptyState title={title} description={description} />
+    </div>
+  );
+}
 
 export default function FantasyPage() {
   const user = useCurrentUser();
@@ -36,16 +61,34 @@ export default function FantasyPage() {
 
   if (!user.isFantasyManager) {
     return (
-      <div className="space-y-6">
-        <GameweekHeader gameweekNumber={gameweek.number} compact showCountdown={false} />
-        <EmptyState
-          title="Fantasy not enabled"
-          description="You're registered as a player only. Ask the admin for a fantasy manager invite if you'd like to pick teams."
-        />
-      </div>
+      <FantasyNotReady
+        gameweekNumber={gameweek.number}
+        title="Fantasy picks not available"
+        description="You're on the roster as a player only. Ask the admin for a manager invite from your player page if you'd like to pick fantasy teams."
+      />
     );
   }
 
+  const sessionReady =
+    gameweek.id !== "draft" &&
+    hasLineups(gameweek.status) &&
+    availablePlayers.length > 0;
+
+  if (!sessionReady) {
+    return (
+      <FantasyNotReady
+        gameweekNumber={gameweek.number}
+        title="Selection not open yet"
+        description="The admin is still setting up this week's session. Check back once teams are assigned and fantasy picks open."
+      />
+    );
+  }
+
+  return <FantasyPageContent />;
+}
+
+function FantasyPageContent() {
+  const { gameweek, availablePlayers } = useAppSession();
   const isDesktop = useIsDesktop();
   const [mobileView, setMobileView] = useState<MobileView>("players");
   const [detailPlayer, setDetailPlayer] = useState<Player | null>(null);
@@ -115,12 +158,7 @@ export default function FantasyPage() {
         </div>
       )}
 
-      {availablePlayers.length === 0 ? (
-        <EmptyState
-          title="No player pool yet"
-          description="The admin hasn't opened this gameweek's session pool. Check back after session players are selected."
-        />
-      ) : isDesktop ? (
+      {isDesktop ? (
         <div className="grid grid-cols-2 gap-6 items-start">
           <div ref={playerPoolRef}>
             <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-3">

@@ -30,9 +30,7 @@ export function getNavItemsForUser(user: Profile | null): NavItem[] {
     ];
   }
 
-  const items = allNavItems.filter(
-    (item) => item.href !== "/fantasy" || user.isFantasyManager
-  );
+  const items = [...allNavItems];
 
   if (user.isAdmin) {
     items.push({ href: "/admin", label: "Admin", icon: Shield });
