@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { MatchFormationPitch } from "@/components/game/MatchFormationPitch";
 import { Countdown } from "@/components/home/GameweekHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { StatCard } from "@/components/shared/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { useAppSession, usePlayerLookup } from "@/context/AppSessionContext";
 import { updateMatchFormationAction } from "@/lib/admin/game-actions";
@@ -214,9 +213,10 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
       )}
 
       {!hasScores && !gameFinished && (
-        <section className="grid grid-cols-2 gap-3">
-          <StatCard label="Format" value={gameweek.format} />
-          <StatCard label="Players" value={gameweek.availablePlayerIds.length} highlight />
+        <section>
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated/60 px-3 py-1.5">
+            <span className="text-xs font-semibold text-text-primary tabular-nums">{gameweek.format}</span>
+          </div>
         </section>
       )}
 

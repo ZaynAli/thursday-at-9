@@ -22,8 +22,6 @@ export function ProfileClient() {
         <SignOutButton />
       </div>
 
-      <JerseyPicker currentJerseyId={profile.jerseyId} />
-
       {player && (
         <section>
           <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-3">
@@ -89,6 +87,8 @@ export function ProfileClient() {
       {profile.isFantasyManager && profile.recentGameweekPoints && (
         <RecentForm profile={profile} />
       )}
+
+      <JerseyPicker currentJerseyId={profile.jerseyId} />
     </div>
   );
 }
