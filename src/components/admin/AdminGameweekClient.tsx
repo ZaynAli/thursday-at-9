@@ -254,7 +254,7 @@ export function AdminGameweekClient({
 
   const notifyMessage = NOTIFY_MESSAGE_TEMPLATE(
     gameweekNumber,
-    DEFAULT_FANTASY_DEADLINE.label
+    `${DEFAULT_FANTASY_DEADLINE.label} ${GAME_TIME.timezoneLabel}`
   );
 
   const notifiedLabel = notifiedAt
@@ -295,7 +295,7 @@ export function AdminGameweekClient({
               {String(gameweekNumber).padStart(2, "0")}
             </p>
             <p className="text-sm text-text-muted">
-              {GAME_TIME.dayLabel} · {GAME_TIME.label}
+              {GAME_TIME.dayLabel} · {GAME_TIME.label} {GAME_TIME.timezoneLabel}
             </p>
           </div>
           <span className="text-xs text-text-muted capitalize">

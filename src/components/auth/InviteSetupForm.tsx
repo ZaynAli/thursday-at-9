@@ -7,7 +7,7 @@ import {
   setAuthRedirectCookies,
   type SignInState,
 } from "@/lib/auth/actions";
-import { createClient } from "@/lib/supabase/client";
+import { sendInviteSetupLinkAction } from "@/lib/auth/invite-setup.server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,22 +59,10 @@ export function InviteSetupForm({
     setEmailValue(email);
 
     try {
-      await setAuthRedirectCookies(redirectTo, inviteToken);
+      const result = await sendInviteSetupLinkAction(email, inviteToken, redirectTo);
 
-      const supabase = createClient();
-      const emailRedirectTo = `${window.location.origin}/auth/callback`;
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo },
-      });
-
-      if (error) {
-        const isRateLimit = error.message.toLowerCase().includes("rate limit");
-        const message = isRateLimit
-          ? "Email rate limit reached (~2/hour on Supabase's built-in email). In local dev, use “Get setup link (no email)” below."
-          : error.message;
-        setState({ status: "error", message });
+      if (!result.ok) {
+        setState({ status: "error", message: result.error });
       } else {
         setState({ status: "success", email });
       }

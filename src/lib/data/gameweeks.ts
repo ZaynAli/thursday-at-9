@@ -7,15 +7,16 @@ import {
 import { fetchCurrentGameweek } from "@/lib/data/gameweeks.server";
 import { getLatestRecap as fetchLatestRecapFromDb } from "@/lib/data/results";
 import { GAME_TIME } from "@/lib/constants";
-import { getNextFantasyDeadline } from "@/lib/gameweek-timing";
+import { getNextFantasyDeadline, getNextGameDate } from "@/lib/gameweek-timing";
 import type { Gameweek, GameweekRecap } from "@/types";
 
 function createEmptyDraftGameweek(): Gameweek {
+  const kickoff = getNextGameDate();
   const deadline = getNextFantasyDeadline();
   return {
     id: "draft",
     number: 1,
-    date: deadline.toISOString(),
+    date: kickoff.toISOString(),
     gameTime: GAME_TIME.label,
     fantasyDeadline: deadline.toISOString(),
     status: "draft",

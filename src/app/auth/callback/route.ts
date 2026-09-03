@@ -51,8 +51,12 @@ export async function GET(request: NextRequest) {
   }
 
   if (code || (tokenHash && type)) {
-    const redirectPath = request.cookies.get(AUTH_REDIRECT_COOKIE)?.value;
-    const inviteToken = request.cookies.get(AUTH_INVITE_COOKIE)?.value;
+    const redirectPath =
+      request.cookies.get(AUTH_REDIRECT_COOKIE)?.value ??
+      searchParams.get("next");
+    const inviteToken =
+      request.cookies.get(AUTH_INVITE_COOKIE)?.value ??
+      searchParams.get("invite_token");
 
     const cookieResponse = NextResponse.redirect(new URL("/", request.url));
     const supabase = createSupabaseRouteClient(request, cookieResponse);

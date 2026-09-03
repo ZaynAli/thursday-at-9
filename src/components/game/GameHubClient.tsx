@@ -72,6 +72,10 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
   }, [gameweek.teamFormation, gameweek.teamAssignments, gameweek.format]);
 
   const gameDate = useMemo(() => new Date(gameweek.date), [gameweek.date]);
+  const countdownTarget = useMemo(
+    () => new Date(gameweek.fantasyDeadline || gameweek.date),
+    [gameweek.fantasyDeadline, gameweek.date]
+  );
   const showLineups = hasLineups(gameweek.status) && gameweek.teamAssignments;
   const gameFinished = isGameComplete(gameweek.status);
   const hasScores =
@@ -170,7 +174,7 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
               <span className="text-text-muted font-normal">vs</span> {teamColorName}
             </h1>
             <p className="text-sm text-text-muted mt-1">
-              {formatGameDate(gameDate)} · {GAME_TIME.label}
+              {formatGameDate(gameDate)} · {GAME_TIME.label} {GAME_TIME.timezoneLabel}
             </p>
           </div>
           <Badge variant={getGameStatusVariant(gameweek.status)}>
@@ -181,7 +185,7 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
         {!gameFinished && (
           <div className="rounded-lg border border-border bg-surface/60 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span className="text-xs text-text-muted">Kickoff in</span>
-            <Countdown target={gameDate} label="" compact />
+            <Countdown target={countdownTarget} label="" compact />
           </div>
         )}
       </header>

@@ -89,7 +89,7 @@ export function GameweekHeader({
                 {GAME_TIME.dayLabel} Night
               </span>
               <span className="text-xl font-bold text-lime tabular-nums">
-                {GAME_TIME.label}
+                {GAME_TIME.label} {GAME_TIME.timezoneLabel}
               </span>
             </div>
           </div>

@@ -23,7 +23,7 @@ export const mockGameweekNotifications: GameweekNotification[] = [
     sentAt: "2026-08-21T18:00:00Z",
     sentByName: "Zain",
     recipientCount: 9,
-    message: "GW07 is open — pick your 5 before 8:30 PM tonight.",
+    message: "GW07 is open — pick your 5 before 9:30 PM ET tonight.",
   },
 ];
 

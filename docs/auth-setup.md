@@ -87,6 +87,20 @@ Flow:
 
 Profile page → **Sign out** (clears session, redirects to `/login`).
 
+## 10. Invite email lands on a Vercel login page
+
+If the setup email opens a **Vercel** sign-in screen instead of the app:
+
+1. **Vercel → Project → Settings → Deployment Protection** — turn off protection for **Production** (or add the user to your Vercel team). External managers cannot pass Vercel SSO.
+2. **Supabase → Authentication → URL configuration**
+   - Site URL: `https://thursday-at-9.vercel.app`
+   - Redirect URLs: `https://thursday-at-9.vercel.app/auth/callback**`
+3. **Vercel env** (Production): `SITE_URL=https://thursday-at-9.vercel.app` and `PRODUCTION_SITE_URL=https://thursday-at-9.vercel.app`
+
+**Workaround:** Admin runs `npm run auth:link -- manager@email.com --production` and texts the generated link (skips email entirely).
+
+Invite links now embed `invite_token` in the magic-link redirect so setup still works if the manager opens the email on a different device than the browser where they requested it.
+
 ## Email rate limit (built-in SMTP)
 
 Supabase's default email sender allows **~2 auth emails per hour** per project. With password sign-in, you only hit this when **new managers** accept invites — not on every login.

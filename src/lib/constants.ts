@@ -1,18 +1,26 @@
 /** Central league configuration — single source of truth for business rules */
 
+/** Wall-clock times are Eastern (EST/EDT). */
+export const LEAGUE_TIMEZONE = "America/New_York";
+
 export const GAME_TIME = {
   dayOfWeek: 4, // Thursday (0 = Sunday)
   hour: 21,
   minute: 30,
   label: "9:30 PM",
   dayLabel: "Thursday",
+  timezoneLabel: "ET",
 } as const;
 
+/**
+ * Fantasy selection auto-locks at kickoff (same as GAME_TIME),
+ * unless the admin locks earlier.
+ */
 export const DEFAULT_FANTASY_DEADLINE = {
-  dayOfWeek: 4,
-  hour: 20,
-  minute: 30,
-  label: "8:30 PM",
+  dayOfWeek: GAME_TIME.dayOfWeek,
+  hour: GAME_TIME.hour,
+  minute: GAME_TIME.minute,
+  label: GAME_TIME.label,
 } as const;
 
 export const SQUAD_SIZE = 5;

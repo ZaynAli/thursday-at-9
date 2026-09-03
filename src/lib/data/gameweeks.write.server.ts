@@ -1,4 +1,5 @@
 import { DEFAULT_FANTASY_DEADLINE, GAME_TIME } from "@/lib/constants";
+import { easternDateTimeToIso } from "@/lib/gameweek-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapGameweekRow } from "@/lib/data/mappers/gameweek";
 import { fetchCurrentGameweek } from "@/lib/data/gameweeks.server";
@@ -47,19 +48,18 @@ function parseDateParts(dateStr: string): { year: number; month: number; day: nu
 
 export function buildScheduledAt(dateStr: string): string {
   const { year, month, day } = parseDateParts(dateStr);
-  return new Date(year, month - 1, day, GAME_TIME.hour, GAME_TIME.minute, 0).toISOString();
+  return easternDateTimeToIso(year, month, day, GAME_TIME.hour, GAME_TIME.minute);
 }
 
 export function buildFantasyDeadlineAt(dateStr: string): string {
   const { year, month, day } = parseDateParts(dateStr);
-  return new Date(
+  return easternDateTimeToIso(
     year,
-    month - 1,
+    month,
     day,
     DEFAULT_FANTASY_DEADLINE.hour,
-    DEFAULT_FANTASY_DEADLINE.minute,
-    0
-  ).toISOString();
+    DEFAULT_FANTASY_DEADLINE.minute
+  );
 }
 
 async function getOrCreateCurrentSeasonId(): Promise<string> {

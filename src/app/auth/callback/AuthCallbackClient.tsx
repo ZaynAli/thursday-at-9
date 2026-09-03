@@ -81,7 +81,10 @@ export function AuthCallbackClient() {
         return;
       }
 
-      const { redirectTo } = await finalizeAuthCallback();
+      const { redirectTo } = await finalizeAuthCallback({
+        inviteToken: params.get("invite_token"),
+        redirectPath: params.get("next"),
+      });
       router.refresh();
       router.replace(redirectTo);
     }

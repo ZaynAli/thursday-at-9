@@ -28,9 +28,9 @@ export const mockGameweeks: Gameweek[] = [
   {
     id: "gw-8",
     number: 8,
-    date: "2026-08-28T21:30:00",
+    date: "2026-08-29T01:30:00.000Z",
     gameTime: "9:30 PM",
-    fantasyDeadline: "2026-08-28T20:30:00",
+    fantasyDeadline: "2026-08-29T01:30:00.000Z",
     status: "selection_open",
     format: "7v7",
     teamWhiteName: "White",

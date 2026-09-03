@@ -4,21 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, X } from "lucide-react";
 import { useAppSession, useCurrentUser } from "@/context/AppSessionContext";
-import { DEFAULT_FANTASY_DEADLINE } from "@/lib/constants";
+import { DEFAULT_FANTASY_DEADLINE, GAME_TIME } from "@/lib/constants";
+import { formatEasternDeadline } from "@/lib/gameweek-timing";
 import { cn } from "@/lib/utils";
 
 const DISMISS_PREFIX = "930-dismissed-gw-alert-";
-
-function formatDeadline(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export function GameweekOpenBanner() {
   const { gameweek, dataSource } = useAppSession();
@@ -58,8 +48,8 @@ export function GameweekOpenBanner() {
           Gameweek {String(gameweek.number).padStart(2, "0")} is open — pick your team
         </p>
         <p className="text-xs text-text-muted mt-0.5">
-          Deadline {formatDeadline(gameweek.fantasyDeadline)} ({DEFAULT_FANTASY_DEADLINE.label}{" "}
-          Thursday)
+          Locks {formatEasternDeadline(gameweek.fantasyDeadline)} (
+          {DEFAULT_FANTASY_DEADLINE.label} {GAME_TIME.timezoneLabel} / kickoff)
         </p>
         <Link
           href="/fantasy"
