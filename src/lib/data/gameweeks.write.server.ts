@@ -5,8 +5,9 @@ import { mapGameweekRow } from "@/lib/data/mappers/gameweek";
 import { fetchCurrentGameweek } from "@/lib/data/gameweeks.server";
 import type { GameweekRow } from "@/lib/data/db-types";
 import {
-  buildDefaultFormation,
+  formationFromSlotMap,
   formationToSlotMap,
+  reconcileFormation,
   type TeamFormation,
 } from "@/lib/formations";
 import {
@@ -183,6 +184,25 @@ async function upsertMatchAndAssignments(
     matchId = created.id;
   }
 
+  // Snapshot current pitch slots before replacing roster rows.
+  let existingSlots: {
+    player_id: string;
+    team_side: "a" | "b";
+    position_index: number | null;
+  }[] = [];
+
+  if (matchId) {
+    const { data: priorRows, error: priorError } = await supabase
+      .from("match_players")
+      .select("player_id, team_side, position_index")
+      .eq("match_id", matchId);
+
+    if (priorError) {
+      throwGameweekError("Failed to load formation", priorError.message);
+    }
+    existingSlots = (priorRows ?? []) as typeof existingSlots;
+  }
+
   const { error: deleteAssignmentsError } = await supabase
     .from("match_players")
     .delete()
@@ -192,20 +212,37 @@ async function upsertMatchAndAssignments(
     throwGameweekError("Failed to update team assignments", deleteAssignmentsError.message);
   }
 
-  const defaultFormation = buildDefaultFormation(
-    Object.fromEntries(
-      selectedPlayerIds
-        .map((playerId) => {
-          const team = assignments[playerId];
-          if (team !== "white" && team !== "color") return null;
-          return [playerId, team] as const;
-        })
-        .filter((entry): entry is [string, "white" | "color"] => Boolean(entry))
-    ),
-    format
+  const teamAssignments: Record<string, "white" | "color"> = Object.fromEntries(
+    selectedPlayerIds
+      .map((playerId) => {
+        const team = assignments[playerId];
+        if (team !== "white" && team !== "color") return null;
+        return [playerId, team] as const;
+      })
+      .filter((entry): entry is [string, "white" | "color"] => Boolean(entry))
   );
 
-  const slotMap = formationToSlotMap(defaultFormation);
+  // Preserve existing pitch layout where possible; fill vacated slots with newcomers.
+  const previousFormation =
+    existingSlots.length > 0
+      ? formationFromSlotMap(
+          Object.fromEntries(
+            existingSlots
+              .filter((row) => row.position_index != null)
+              .map((row) => [
+                row.player_id,
+                {
+                  team: (row.team_side === "a" ? "white" : "color") as "white" | "color",
+                  slot: row.position_index as number,
+                },
+              ])
+          ),
+          format
+        )
+      : undefined;
+
+  const nextFormation = reconcileFormation(previousFormation, teamAssignments, format);
+  const slotMap = formationToSlotMap(nextFormation);
 
   const rows: {
     match_id: string;

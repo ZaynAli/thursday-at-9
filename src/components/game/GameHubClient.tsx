@@ -10,7 +10,7 @@ import { useAppSession, usePlayerLookup } from "@/context/AppSessionContext";
 import { updateMatchFormationAction } from "@/lib/admin/game-actions";
 import { formatGameDate } from "@/lib/gameweek-timing";
 import {
-  buildDefaultFormation,
+  reconcileFormation,
   swapFormationSlots,
   type TeamFormation,
 } from "@/lib/formations";
@@ -50,11 +50,14 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
   const isAdmin = user?.isAdmin ?? false;
 
   const [formation, setFormation] = useState<TeamFormation>(() => {
-    if (gameweek.teamFormation) return gameweek.teamFormation;
     if (gameweek.teamAssignments) {
-      return buildDefaultFormation(gameweek.teamAssignments, gameweek.format);
+      return reconcileFormation(
+        gameweek.teamFormation,
+        gameweek.teamAssignments,
+        gameweek.format
+      );
     }
-    return { white: [], color: [] };
+    return gameweek.teamFormation ?? { white: [], color: [] };
   });
   const [selectedSlot, setSelectedSlot] = useState<{ team: SessionTeam; slot: number } | null>(
     null
@@ -63,11 +66,14 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (gameweek.teamFormation) {
-      setFormation(gameweek.teamFormation);
-    } else if (gameweek.teamAssignments) {
-      setFormation(buildDefaultFormation(gameweek.teamAssignments, gameweek.format));
-    }
+    if (!gameweek.teamAssignments) return;
+    setFormation(
+      reconcileFormation(
+        gameweek.teamFormation,
+        gameweek.teamAssignments,
+        gameweek.format
+      )
+    );
   }, [gameweek.teamFormation, gameweek.teamAssignments, gameweek.format]);
 
   const gameDate = useMemo(() => new Date(gameweek.date), [gameweek.date]);

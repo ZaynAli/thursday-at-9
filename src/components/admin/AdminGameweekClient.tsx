@@ -13,12 +13,13 @@ import {
 } from "@/lib/admin/gameweek-actions";
 import { NOTIFY_MESSAGE_TEMPLATE } from "@/lib/onboarding.constants";
 import {
+  getFormatConfig,
   type GameFormat,
   type SessionTeam,
   type TeamAssignments,
   GAME_FORMATS,
   getMaxSessionPlayers,
-  getFormatConfig,
+  countTeamAssignments,
   isTeamSetupComplete,
   DEFAULT_TEAM_NAMES,
 } from "@/lib/session-formats";
@@ -171,7 +172,21 @@ export function AdminGameweekClient({
     }
     if (selectedIds.length >= maxPlayers) return;
     setSelectedIds((prev) => [...prev, id]);
-    setAssignments((a) => ({ ...a, [id]: null }));
+    setAssignments((a) => {
+      const config = getFormatConfig(format);
+      const whiteCount = countTeamAssignments(a, "white");
+      const colorCount = countTeamAssignments(a, "color");
+      let team: SessionTeam | null = null;
+      // Prefer the side that has a vacancy after a dropout.
+      if (whiteCount < config.playersPerSide && colorCount >= config.playersPerSide) {
+        team = "white";
+      } else if (colorCount < config.playersPerSide && whiteCount >= config.playersPerSide) {
+        team = "color";
+      } else if (whiteCount < config.playersPerSide || colorCount < config.playersPerSide) {
+        team = whiteCount <= colorCount ? "white" : "color";
+      }
+      return { ...a, [id]: team };
+    });
   };
 
   const assignTeam = (playerId: string, team: SessionTeam | null) => {

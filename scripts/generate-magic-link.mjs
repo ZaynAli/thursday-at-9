@@ -158,15 +158,38 @@ const { data, error } = await supabase.auth.admin.generateLink({
   },
 });
 
-if (error) {
-  console.error("Failed to generate link:", error.message);
-  process.exit(1);
+let hashedToken = data?.properties?.hashed_token;
+let verificationType = "email";
+
+if (error || !hashedToken) {
+  // Ensure auth user exists for brand-new emails, then retry.
+  const created = await supabase.auth.admin.createUser({
+    email,
+    email_confirm: false,
+  });
+  if (created.error && !/already|exists/i.test(created.error.message)) {
+    console.error("Failed to generate link:", error?.message ?? created.error.message);
+    process.exit(1);
+  }
+
+  const retry = await supabase.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: {
+      redirectTo: `${siteUrl}/auth/callback`,
+    },
+  });
+
+  if (retry.error) {
+    console.error("Failed to generate link:", retry.error.message);
+    process.exit(1);
+  }
+
+  hashedToken = retry.data.properties?.hashed_token;
+  verificationType = "email";
 }
 
-const hashedToken = data.properties?.hashed_token;
-const verificationType = data.properties?.verification_type;
-
-if (!hashedToken || !verificationType) {
+if (!hashedToken) {
   console.error("No token returned:", JSON.stringify(data, null, 2));
   process.exit(1);
 }
@@ -177,15 +200,25 @@ console.log(`\nTarget app: ${siteUrl}`);
 if (isLocalOrigin(siteUrl)) {
   console.log("Local link — open while `npm run dev` is running.\n");
 } else {
-  console.log("Production link — open in your browser.\n");
+  console.log("Production link — open in a browser.\n");
 }
-console.log("Setup link (single use, ~1 hour):\n");
+console.log("Setup link (single use):\n");
 console.log(setupLink);
+console.log(
+  [
+    "",
+    "Important:",
+    "• The page will ask them to tap “Continue” — that is intentional.",
+    "• Do not open/preview the link yourself first (iMessage/Slack previews burn it).",
+    "• Prefer pasting the link into a notes app, or have them open it once.",
+    "",
+  ].join("\n")
+);
 
 if (inviteToken) {
   console.log(
-    `\nInvite token provided. Prefer the in-app button on /join?token=${inviteToken} — it stores invite cookies automatically.\n`
+    `Invite token provided. Prefer /join?token=${inviteToken} so invite cookies are set.\n`
   );
 } else {
-  console.log("\nAfter opening the link, choose a password if prompted.\n");
+  console.log("After opening the link, choose a password if prompted.\n");
 }

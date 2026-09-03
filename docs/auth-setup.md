@@ -97,9 +97,11 @@ If the setup email opens a **Vercel** sign-in screen instead of the app:
    - Redirect URLs: `https://thursday-at-9.vercel.app/auth/callback**`
 3. **Vercel env** (Production): `SITE_URL=https://thursday-at-9.vercel.app` and `PRODUCTION_SITE_URL=https://thursday-at-9.vercel.app`
 
-**Workaround:** Admin runs `npm run auth:link -- manager@email.com --production` and texts the generated link (skips email entirely).
+**Workaround:** Admin runs `npm run auth:link -- manager@email.com --production` and sends the generated link (skips email entirely).
 
-Invite links now embed `invite_token` in the magic-link redirect so setup still works if the manager opens the email on a different device than the browser where they requested it.
+**If the link says expired immediately:** Chat apps (iMessage, Slack, WhatsApp) and email scanners often *preview* the URL and burn the one-time token. The app now shows a **Continue** button so verification only runs after a real tap. Still avoid opening/previewing the link yourself before the manager does.
+
+Invite links embed `invite_token` in the magic-link redirect so setup still works across devices.
 
 ## Email rate limit (built-in SMTP)
 

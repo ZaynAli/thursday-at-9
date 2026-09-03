@@ -2,6 +2,7 @@ import { GAME_TIME } from "@/lib/constants";
 import {
   buildDefaultFormation,
   formationFromSlotMap,
+  reconcileFormation,
 } from "@/lib/formations";
 import type { MatchPlayerRow, MatchRow, GameweekRow } from "@/lib/data/db-types";
 import type { Gameweek, MatchScores } from "@/types";
@@ -24,13 +25,14 @@ export function mapGameweekRow(
     }
   });
 
-  let teamFormation = Object.keys(slotMap).length
+  const existingFormation = Object.keys(slotMap).length
     ? formationFromSlotMap(slotMap, row.format)
     : undefined;
 
-  if (!teamFormation && Object.keys(teamAssignments).length > 0) {
-    teamFormation = buildDefaultFormation(teamAssignments, row.format);
-  }
+  const teamFormation =
+    Object.keys(teamAssignments).length > 0
+      ? reconcileFormation(existingFormation, teamAssignments, row.format)
+      : undefined;
 
   const matchScores: MatchScores | undefined =
     match?.team_a_score != null || match?.team_b_score != null

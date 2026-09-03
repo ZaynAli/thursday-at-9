@@ -33,9 +33,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const errorMessage =
     params.error === "auth"
-      ? "Setup link expired or invalid. Ask the admin for a new manager invite."
+      ? "Setup link expired or invalid. Ask the admin for a fresh link (and open it yourself — don’t let chat apps preview it first)."
       : params.error === "missing_code"
-        ? "Sign-in could not be completed. Open your manager invite link again."
+        ? "Sign-in could not be completed. Open your manager invite link again, or ask the admin for a fresh setup link."
         : undefined;
 
   return (

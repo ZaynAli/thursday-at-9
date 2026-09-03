@@ -130,6 +130,54 @@ export function buildDefaultFormation(
   return formation;
 }
 
+/**
+ * Keep existing pitch slots for players still on the same team, then place
+ * newcomers (or team-switchers) into empty slots. Used when the session roster
+ * changes so a dropout's slot gets filled by the replacement.
+ */
+export function reconcileFormation(
+  existing: TeamFormation | null | undefined,
+  teamAssignments: Record<string, SessionTeam>,
+  format: GameFormat
+): TeamFormation {
+  const size = getPlayersPerSide(format);
+  const next = createEmptyFormation(format);
+
+  if (existing) {
+    for (const team of ["white", "color"] as const) {
+      const row = existing[team] ?? [];
+      for (let i = 0; i < size; i++) {
+        const playerId = row[i];
+        if (playerId && teamAssignments[playerId] === team) {
+          next[team][i] = playerId;
+        }
+      }
+    }
+  }
+
+  const placed = new Set(
+    [...next.white, ...next.color].filter((id): id is string => Boolean(id))
+  );
+
+  const unplacedByTeam: Record<SessionTeam, string[]> = { white: [], color: [] };
+  for (const [playerId, team] of Object.entries(teamAssignments)) {
+    if (team !== "white" && team !== "color") continue;
+    if (placed.has(playerId)) continue;
+    unplacedByTeam[team].push(playerId);
+  }
+
+  for (const team of ["white", "color"] as const) {
+    const row = next[team];
+    for (const playerId of unplacedByTeam[team]) {
+      const emptyIndex = row.findIndex((id) => id == null);
+      if (emptyIndex < 0) break;
+      row[emptyIndex] = playerId;
+    }
+  }
+
+  return next;
+}
+
 export function formationFromSlotMap(
   slotMap: Record<string, { team: SessionTeam; slot: number }>,
   format: GameFormat
