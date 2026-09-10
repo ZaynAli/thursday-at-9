@@ -36,6 +36,11 @@ export {
   type ManagerFantasyTeamView,
 } from "@/lib/data/fantasy-teams";
 export {
+  getManagerGameweekReview,
+  type ManagerGameweekReview,
+  type ManagerSquadPlayer,
+} from "@/lib/data/manager-review";
+export {
   getGameweekResultsSnapshot,
   type GameweekResultsSnapshot,
 } from "@/lib/data/results";

@@ -22,6 +22,9 @@ interface PitchPlayerProps {
   isCaptain: boolean;
   onClick?: () => void;
   empty?: boolean;
+  /** When set, show fantasy points instead of price. */
+  points?: number | null;
+  showPoints?: boolean;
 }
 
 export function PitchPlayer({
@@ -30,6 +33,8 @@ export function PitchPlayer({
   isCaptain,
   onClick,
   empty = false,
+  points,
+  showPoints = false,
 }: PitchPlayerProps) {
   const pos = PITCH_POSITIONS[positionIndex];
 
@@ -87,7 +92,13 @@ export function PitchPlayer({
       <span className="mt-1.5 text-xs font-semibold text-text-primary whitespace-nowrap">
         {player.name.split(" ")[0]}
       </span>
-      <PlayerPrice price={player.price} size="sm" className="text-[10px]" />
+      {showPoints ? (
+        <span className="text-[10px] font-bold tabular-nums text-lime">
+          {points ?? 0} pts
+        </span>
+      ) : (
+        <PlayerPrice price={player.price} size="sm" className="text-[10px]" />
+      )}
       {isCaptain && (
         <div className="mt-0.5">
           <CaptainBadge size="md" />
@@ -103,6 +114,9 @@ interface SoccerPitchProps {
   onPlayerClick?: (player: Player) => void;
   onEmptySlotClick?: () => void;
   className?: string;
+  /** playerId → points to display (use applied/captain points). */
+  playerPoints?: Record<string, number>;
+  showPoints?: boolean;
 }
 
 export function SoccerPitch({
@@ -111,6 +125,8 @@ export function SoccerPitch({
   onPlayerClick,
   onEmptySlotClick,
   className,
+  playerPoints,
+  showPoints = false,
 }: SoccerPitchProps) {
   const slots = Array.from({ length: 5 }, (_, i) => players[i] ?? null);
 
@@ -166,6 +182,8 @@ export function SoccerPitch({
                 positionIndex={i}
                 isCaptain={player.id === captainId}
                 onClick={() => onPlayerClick?.(player)}
+                showPoints={showPoints}
+                points={playerPoints?.[player.id] ?? null}
               />
             ) : (
               <PitchPlayer

@@ -1,9 +1,14 @@
 import { LeagueClient } from "@/components/league/LeagueClient";
-import { getPlayerSeasonStats, getStandingsWithCurrentUser } from "@/lib/data";
+import {
+  getCurrentUserId,
+  getPlayerSeasonStats,
+  getStandingsWithCurrentUser,
+} from "@/lib/data";
 
 export default async function LeaguePage() {
+  const currentUserId = await getCurrentUserId();
   const [standings, stats] = await Promise.all([
-    getStandingsWithCurrentUser(),
+    getStandingsWithCurrentUser(currentUserId),
     getPlayerSeasonStats(),
   ]);
 

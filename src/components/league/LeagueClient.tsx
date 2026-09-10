@@ -40,7 +40,15 @@ export function LeagueClient({ standings, stats }: LeagueClientProps) {
         </TabsList>
 
         <TabsContent value="standings" className="mt-4">
-          <LeagueTable standings={standings} />
+          {standings.length === 0 ? (
+            <div className="surface-card p-8 text-center">
+              <p className="text-sm text-text-muted">
+                Standings appear after the admin publishes a gameweek&apos;s results.
+              </p>
+            </div>
+          ) : (
+            <LeagueTable standings={standings} />
+          )}
         </TabsContent>
 
         <TabsContent value="stats" className="mt-4">

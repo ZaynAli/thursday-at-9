@@ -30,6 +30,7 @@ function revalidateResultsPaths() {
   revalidatePath("/");
   revalidatePath("/fantasy");
   revalidatePath("/league");
+  revalidatePath("/league", "layout");
   revalidatePath("/profile");
   revalidatePath("/admin");
   revalidatePath("/admin/results");

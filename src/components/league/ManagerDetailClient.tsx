@@ -1,43 +1,73 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Trophy, Star, Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  ArrowLeft,
+  Trophy,
+  Star,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 import { SoccerPitch } from "@/components/fantasy/SoccerPitch";
 import { StatCard } from "@/components/shared/StatCard";
 import { Badge } from "@/components/ui/badge";
-import type { Profile, LeagueStanding, Gameweek, FantasyTeam, Player } from "@/types";
+import type { ManagerGameweekReview } from "@/lib/data";
+import type { Player } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface ManagerDetailClientProps {
-  profile: Profile;
-  standing: LeagueStanding | null;
-  gameweek: Gameweek;
-  fantasyTeam: FantasyTeam | null;
-  rosterPlayers: Player[];
+  review: ManagerGameweekReview;
 }
 
-export function ManagerDetailClient({
-  profile,
-  standing,
-  gameweek,
-  fantasyTeam,
-  rosterPlayers,
-}: ManagerDetailClientProps) {
-  const playerLookup = new Map(rosterPlayers.map((p) => [p.id, p]));
+export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
+  const {
+    profile,
+    standing,
+    gameweek,
+    squad,
+    teamTotal,
+    showPoints,
+    isSubmitted,
+  } = review;
 
-  const selections = fantasyTeam?.selections ?? [];
-  const captainId = selections.find((s) => s.isCaptain)?.playerId;
-  const selectedPlayers = selections
-    .map((s) => playerLookup.get(s.playerId) ?? null)
-    .filter(Boolean) as Player[];
+  const captainId = squad.find((s) => s.isCaptain)?.playerId;
+  const pitchPlayers: (Player | null)[] = Array.from({ length: 5 }, (_, i) => {
+    const entry = squad[i];
+    if (!entry) return null;
+    return {
+      id: entry.playerId,
+      name: entry.name,
+      initials: entry.initials,
+      skillLevel: 3,
+      price: 0,
+      isActive: true,
+      jerseyId: entry.jerseyId,
+      form: 0,
+      lastGameweekPoints: entry.basePoints ?? 0,
+      seasonFantasyPoints: 0,
+      ownershipPercent: 0,
+      appearances: 0,
+      goals: 0,
+      assists: 0,
+      defensiveStops: 0,
+      wins: 0,
+    };
+  });
 
-  const isPublished = gameweek.status === "published";
-  const hasTeam = selectedPlayers.length > 0;
-  const isSubmitted = Boolean(fantasyTeam?.submittedAt);
+  const playerPoints: Record<string, number> = {};
+  for (const entry of squad) {
+    if (entry.appliedPoints != null) {
+      playerPoints[entry.playerId] = entry.appliedPoints;
+    }
+  }
+
+  const hasTeam = squad.length > 0;
+  const gwLabel = `GW ${String(gameweek.number).padStart(2, "0")}`;
 
   return (
     <div className="space-y-6 animate-slide-up max-w-2xl">
-      {/* Back nav */}
       <Link
         href="/league"
         className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
@@ -46,11 +76,13 @@ export function ManagerDetailClient({
         Back to League
       </Link>
 
-      {/* Header */}
       <header className="flex items-start gap-4">
         <div
           className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold shrink-0"
-          style={{ backgroundColor: profile.avatarColor + "22", color: profile.avatarColor }}
+          style={{
+            backgroundColor: profile.avatarColor + "22",
+            color: profile.avatarColor,
+          }}
         >
           {profile.initials}
         </div>
@@ -65,7 +97,7 @@ export function ManagerDetailClient({
             )}
             {standing && (
               <span className="text-xs text-text-muted tabular-nums">
-                {standing.seasonPoints} pts
+                {standing.seasonPoints} pts season
               </span>
             )}
             {standing && <MovementPill movement={standing.rankMovement} />}
@@ -73,88 +105,92 @@ export function ManagerDetailClient({
         </div>
       </header>
 
-      {/* Stats row */}
       {standing && (
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <section className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <StatCard label="Season Pts" value={standing.seasonPoints} highlight />
-          <StatCard label="GW Pts" value={standing.currentGameweekPoints} />
           <StatCard
-            label="Avg GW"
-            value={profile.averageGameweekPoints?.toFixed(1) ?? "—"}
+            label={`${gwLabel} Pts`}
+            value={teamTotal ?? standing.currentGameweekPoints}
           />
-          <StatCard
-            label="Best GW"
-            value={profile.bestGameweek ?? "—"}
-            subtext={profile.bestGameweekNumber ? `Gameweek ${profile.bestGameweekNumber}` : undefined}
-          />
+          <StatCard label="Rank" value={`#${standing.rank}`} />
         </section>
       )}
 
-      {/* Recent form sparkline */}
-      {profile.recentGameweekPoints && profile.recentGameweekPoints.length > 0 && (
-        <section className="surface-card p-4">
-          <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-3">
-            Recent Form
-          </h2>
-          <div className="flex items-end gap-1.5 h-16">
-            {profile.recentGameweekPoints.map((pts, i) => {
-              const max = Math.max(...profile.recentGameweekPoints!);
-              const height = max > 0 ? (pts / max) * 100 : 0;
-              const gwNum = profile.recentGameweekNumbers?.[i];
-              return (
-                <div
-                  key={i}
-                  className="flex-1 flex flex-col items-center gap-1"
-                >
-                  <span className="text-[9px] text-text-muted tabular-nums">{pts}</span>
-                  <div
-                    className={cn(
-                      "w-full rounded-sm transition-all",
-                      i === profile.recentGameweekPoints!.length - 1
-                        ? "bg-lime"
-                        : "bg-lime/30"
-                    )}
-                    style={{ height: `${Math.max(height, 8)}%` }}
-                  />
-                  {gwNum != null && (
-                    <span className="text-[8px] text-text-muted/60 tabular-nums">
-                      {gwNum}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Fantasy team — last selection */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase">
-            {isPublished ? `GW ${String(gameweek.number).padStart(2, "0")} Selection` : "Current Selection"}
+            {showPoints ? `${gwLabel} Result` : `${gwLabel} Selection`}
           </h2>
-          {isSubmitted && (
-            <Badge variant="outline" className="text-[10px] gap-1">
-              <Star className="h-2.5 w-2.5" />
-              Submitted
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {isSubmitted && (
+              <Badge variant="outline" className="text-[10px] gap-1">
+                <Star className="h-2.5 w-2.5" />
+                Submitted
+              </Badge>
+            )}
+            {showPoints && (
+              <Badge variant="outline" className="text-[10px]">
+                Final
+              </Badge>
+            )}
+          </div>
         </div>
 
         {hasTeam ? (
-          <div className="surface-card p-4">
+          <div className="surface-card p-4 space-y-4">
             <SoccerPitch
-              players={Array.from({ length: 5 }, (_, i) => selectedPlayers[i] ?? null)}
+              players={pitchPlayers}
               captainId={captainId}
+              showPoints={showPoints}
+              playerPoints={showPoints ? playerPoints : undefined}
             />
-            {isPublished && standing && (
-              <div className="mt-4 text-center">
-                <p className="text-xs text-text-muted">Gameweek points</p>
+
+            {showPoints && teamTotal != null && (
+              <div className="text-center border-t border-border pt-4">
+                <p className="text-xs text-text-muted uppercase tracking-wider">
+                  {gwLabel} total
+                </p>
                 <p className="text-3xl font-bold text-lime tabular-nums mt-1">
-                  {standing.currentGameweekPoints}
+                  {teamTotal}
+                </p>
+                <p className="text-[10px] text-text-muted mt-1">
+                  Captain scores 2×
                 </p>
               </div>
+            )}
+
+            {!showPoints && (
+              <p className="text-xs text-text-muted text-center">
+                Points appear here after the admin publishes results.
+              </p>
+            )}
+
+            {showPoints && (
+              <ul className="space-y-2 border-t border-border pt-3">
+                {squad.map((entry) => (
+                  <li
+                    key={entry.playerId}
+                    className="flex items-center justify-between text-sm py-1"
+                  >
+                    <span className="font-medium">
+                      {entry.name}
+                      {entry.isCaptain && (
+                        <span className="ml-1.5 text-[10px] text-lime font-semibold">
+                          (C)
+                        </span>
+                      )}
+                    </span>
+                    <span className="tabular-nums text-lime font-semibold">
+                      {entry.appliedPoints ?? 0}
+                      {entry.isCaptain && entry.basePoints != null && (
+                        <span className="text-text-muted font-normal text-xs ml-1">
+                          ({entry.basePoints}×2)
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         ) : (
@@ -163,7 +199,9 @@ export function ManagerDetailClient({
             <p className="text-sm text-text-muted">
               {gameweek.id === "draft"
                 ? "No gameweek active yet."
-                : "No team submitted for this gameweek."}
+                : showPoints
+                  ? `No team was submitted for ${gwLabel}.`
+                  : "No team submitted for this gameweek yet."}
             </p>
           </div>
         )}
@@ -188,7 +226,11 @@ function MovementPill({ movement }: { movement: number }) {
         up ? "text-lime" : "text-danger"
       )}
     >
-      {up ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+      {up ? (
+        <TrendingUp className="h-2.5 w-2.5" />
+      ) : (
+        <TrendingDown className="h-2.5 w-2.5" />
+      )}
       {Math.abs(movement)}
     </span>
   );
