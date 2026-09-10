@@ -26,6 +26,7 @@ interface ManagerDetailClientProps {
 export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
   const {
     profile,
+    displayName,
     standing,
     gameweek,
     squad,
@@ -102,7 +103,7 @@ export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
           {profile.initials}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight">{profile.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             {standing && (
               <Badge variant="outline" className="gap-1 text-xs">

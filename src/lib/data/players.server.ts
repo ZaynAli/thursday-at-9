@@ -109,7 +109,10 @@ export async function fetchPlayerByName(name: string): Promise<Player | null> {
   return player ?? null;
 }
 
-export async function fetchPlayersByIds(ids: string[]): Promise<Player[]> {
+export async function fetchPlayersByIds(
+  ids: string[],
+  options?: { withSeasonStats?: boolean }
+): Promise<Player[]> {
   const uuidIds = filterUuidIds(ids);
   if (uuidIds.length === 0) return [];
 
@@ -122,10 +125,14 @@ export async function fetchPlayersByIds(ids: string[]): Promise<Player[]> {
   const { data, error } = playersResult;
   if (error) throwQueryError("Failed to load players", error.message);
   const rows = (data ?? []) as PlayerRow[];
-  const enriched = await enrichPlayersWithSeasonStats(
-    enrichPlayersWithJerseys(rows.map(mapPlayerRow), jerseyByProfileId)
+  let players = enrichPlayersWithJerseys(
+    rows.map(mapPlayerRow),
+    jerseyByProfileId
   );
-  const byId = new Map(enriched.map((player) => [player.id, player]));
+  if (options?.withSeasonStats !== false) {
+    players = await enrichPlayersWithSeasonStats(players);
+  }
+  const byId = new Map(players.map((player) => [player.id, player]));
   return uuidIds.map((id) => byId.get(id)).filter(Boolean) as Player[];
 }
 

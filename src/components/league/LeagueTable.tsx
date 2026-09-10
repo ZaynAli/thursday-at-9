@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { LeagueStanding } from "@/types";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react";
@@ -11,8 +11,6 @@ interface LeagueTableProps {
 }
 
 export function LeagueTable({ standings, className }: LeagueTableProps) {
-  const router = useRouter();
-
   return (
     <div className={cn("surface-card overflow-hidden", className)}>
       {/* Desktop table */}
@@ -31,17 +29,8 @@ export function LeagueTable({ standings, className }: LeagueTableProps) {
             {standings.map((s, i) => (
               <tr
                 key={s.managerId}
-                role="link"
-                tabIndex={0}
-                onClick={() => router.push(`/league/${s.managerId}`)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    router.push(`/league/${s.managerId}`);
-                  }
-                }}
                 className={cn(
-                  "border-b border-border/50 transition-colors cursor-pointer group",
+                  "relative border-b border-border/50 transition-colors group",
                   "hover:bg-surface-hover/50",
                   s.isCurrentUser && "bg-lime/5",
                   i === 0 && "border-l-2 border-l-gold",
@@ -53,14 +42,16 @@ export function LeagueTable({ standings, className }: LeagueTableProps) {
                   <RankCell rank={s.rank} movement={s.rankMovement} />
                 </td>
                 <td className="py-3.5">
-                  <span
+                  <Link
+                    href={`/league/${s.managerId}`}
+                    prefetch
                     className={cn(
-                      "font-medium text-sm group-hover:text-lime transition-colors",
+                      "font-medium text-sm group-hover:text-lime transition-colors after:absolute after:inset-0",
                       s.isCurrentUser ? "text-lime" : "text-text-primary"
                     )}
                   >
                     {s.managerName}
-                  </span>
+                  </Link>
                 </td>
                 <td className="py-3.5 text-right tabular-nums text-sm text-text-secondary pr-3">
                   {s.currentGameweekPoints}
@@ -80,10 +71,10 @@ export function LeagueTable({ standings, className }: LeagueTableProps) {
       {/* Mobile cards */}
       <div className="sm:hidden divide-y divide-border">
         {standings.map((s, i) => (
-          <button
+          <Link
             key={s.managerId}
-            type="button"
-            onClick={() => router.push(`/league/${s.managerId}`)}
+            href={`/league/${s.managerId}`}
+            prefetch
             className={cn(
               "flex items-center gap-3 px-4 py-3.5 transition-colors w-full text-left",
               "active:bg-surface-hover/50",
@@ -106,7 +97,7 @@ export function LeagueTable({ standings, className }: LeagueTableProps) {
               <div className="text-sm tabular-nums font-semibold">{s.seasonPoints}</div>
             </div>
             <ChevronRight className="h-4 w-4 text-text-muted/40 shrink-0" />
-          </button>
+          </Link>
         ))}
       </div>
     </div>

@@ -5,15 +5,20 @@ import { mockPlayers } from "./players";
 /** Standings include fantasy managers only (~10), not all app users. */
 export const mockStandings: LeagueStanding[] = getFantasyManagers()
   .sort((a, b) => (a.managerRank ?? 99) - (b.managerRank ?? 99))
-  .map((m) => ({
-    rank: m.managerRank!,
-    managerId: m.id,
-    managerName: m.name,
-    currentGameweekPoints: m.recentGameweekPoints?.at(-1) ?? 0,
-    seasonPoints: m.totalFantasyPoints!,
-    rankMovement: rankMovementFor(m.id),
-    isCurrentUser: m.id === CURRENT_USER_ID,
-  }));
+  .map((m) => {
+    const linkedPlayer = m.playerId
+      ? mockPlayers.find((p) => p.id === m.playerId)
+      : undefined;
+    return {
+      rank: m.managerRank!,
+      managerId: m.id,
+      managerName: linkedPlayer?.name ?? m.name,
+      currentGameweekPoints: m.recentGameweekPoints?.at(-1) ?? 0,
+      seasonPoints: m.totalFantasyPoints!,
+      rankMovement: rankMovementFor(m.id),
+      isCurrentUser: m.id === CURRENT_USER_ID,
+    };
+  });
 
 function rankMovementFor(managerId: string): number {
   const movements: Record<string, number> = {

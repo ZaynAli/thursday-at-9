@@ -64,6 +64,7 @@ function mockManagerReview(
 
   return {
     profile,
+    displayName: standing?.managerName ?? profile.name,
     standing: standing
       ? {
           ...standing,

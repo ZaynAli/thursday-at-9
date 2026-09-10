@@ -68,10 +68,12 @@ export function LeaguePreview({
 
 function StandingRow({ standing }: { standing: LeagueStanding }) {
   return (
-    <div
+    <Link
+      href={`/league/${standing.managerId}`}
+      prefetch
       className={cn(
-        "flex items-center gap-3 py-1",
-        standing.isCurrentUser && "bg-lime/5 -mx-2 px-2 rounded-md"
+        "flex items-center gap-3 py-1 rounded-md transition-colors hover:bg-surface-hover/40",
+        standing.isCurrentUser && "bg-lime/5 -mx-2 px-2"
       )}
     >
       <RankBadge rank={standing.rank} />
@@ -86,6 +88,6 @@ function StandingRow({ standing }: { standing: LeagueStanding }) {
       <span className="text-sm tabular-nums text-text-secondary">
         {standing.seasonPoints}
       </span>
-    </div>
+    </Link>
   );
 }

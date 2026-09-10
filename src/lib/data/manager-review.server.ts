@@ -1,15 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { preferPlayerName } from "@/lib/data/display-names";
 import { fetchProfileById } from "@/lib/data/profiles.server";
 import { fetchFantasyTeamForManager } from "@/lib/data/fantasy-teams.server";
 import { fetchPlayersByIds } from "@/lib/data/players.server";
-import { mapGameweekRow } from "@/lib/data/mappers/gameweek";
 import { calculateCaptainPoints } from "@/lib/fantasy/scoring";
+import { GAME_TIME } from "@/lib/constants";
 import { resolveJerseyId, type JerseyId } from "@/lib/jerseys";
-import type {
-  GameweekRow,
-  MatchPlayerRow,
-  MatchRow,
-} from "@/lib/data/db-types";
 import type { Gameweek, LeagueStanding, Profile } from "@/types";
 
 export interface ManagerSquadPlayer {
@@ -35,6 +31,8 @@ export interface ManagerSquadPlayer {
 
 export interface ManagerGameweekReview {
   profile: Profile;
+  /** Linked player name when available, else profile name. */
+  displayName: string;
   standing: LeagueStanding | null;
   gameweek: Gameweek;
   squad: ManagerSquadPlayer[];
@@ -55,37 +53,28 @@ async function getCurrentSeasonId(): Promise<string | null> {
   return data?.id ?? null;
 }
 
-async function loadGameweekById(gameweekId: string): Promise<Gameweek | null> {
+/** Lightweight gameweek fields needed for manager league review. */
+async function loadGameweekSummary(gameweekId: string): Promise<Gameweek | null> {
   const supabase = createAdminClient();
   const { data: row, error } = await supabase
     .from("gameweeks")
-    .select("*")
+    .select("id, number, scheduled_at, fantasy_deadline, status, format")
     .eq("id", gameweekId)
     .maybeSingle();
 
   if (error) throw new Error(`Failed to load gameweek: ${error.message}`);
   if (!row) return null;
 
-  const [{ data: poolRows }, { data: matchRow }] = await Promise.all([
-    supabase.from("gameweek_players").select("player_id").eq("gameweek_id", gameweekId),
-    supabase.from("matches").select("*").eq("gameweek_id", gameweekId).maybeSingle(),
-  ]);
-
-  let matchPlayers: MatchPlayerRow[] = [];
-  if (matchRow) {
-    const { data: assignmentRows } = await supabase
-      .from("match_players")
-      .select("player_id, team_side, position_index")
-      .eq("match_id", (matchRow as MatchRow).id);
-    matchPlayers = (assignmentRows ?? []) as MatchPlayerRow[];
-  }
-
-  return mapGameweekRow(
-    row as GameweekRow,
-    (poolRows ?? []).map((entry) => entry.player_id as string),
-    (matchRow as MatchRow | null) ?? null,
-    matchPlayers
-  );
+  return {
+    id: row.id as string,
+    number: row.number as number,
+    date: row.scheduled_at as string,
+    gameTime: GAME_TIME.label,
+    fantasyDeadline: row.fantasy_deadline as string,
+    status: row.status as Gameweek["status"],
+    availablePlayerIds: [],
+    format: (row.format as Gameweek["format"]) ?? "7v7",
+  };
 }
 
 /** Latest published gameweek in the current season (for scored league reviews). */
@@ -105,12 +94,21 @@ export async function fetchLatestPublishedGameweek(): Promise<Gameweek | null> {
 
   if (error) throw new Error(`Failed to load published gameweek: ${error.message}`);
   if (!data?.id) return null;
-  return loadGameweekById(data.id as string);
+  return loadGameweekSummary(data.id as string);
+}
+
+async function resolveDisplayName(profile: Profile): Promise<string> {
+  if (!profile.playerId) return profile.name;
+  const players = await fetchPlayersByIds([profile.playerId], {
+    withSeasonStats: false,
+  });
+  return preferPlayerName(profile.name, players[0]?.name);
 }
 
 async function fetchStandingForManager(
   gameweekId: string,
   managerId: string,
+  displayName: string,
   currentUserId?: string | null
 ): Promise<LeagueStanding | null> {
   const supabase = createAdminClient();
@@ -124,12 +122,10 @@ async function fetchStandingForManager(
   if (error) throw new Error(`Failed to load manager score: ${error.message}`);
   if (!scoreRow) return null;
 
-  const profile = await fetchProfileById(managerId);
-
   return {
     rank: (scoreRow.rank as number) ?? 0,
     managerId,
-    managerName: profile?.name ?? "Manager",
+    managerName: displayName,
     currentGameweekPoints: scoreRow.points as number,
     seasonPoints: scoreRow.season_total as number,
     rankMovement: (scoreRow.rank_movement as number) ?? 0,
@@ -147,21 +143,36 @@ export async function fetchManagerGameweekReview(
   const profile = await fetchProfileById(managerId);
   if (!profile) return null;
 
+  const displayName = await resolveDisplayName(profile);
+
   let gameweek: Gameweek | null = null;
   if (options?.gameweekId) {
-    gameweek = await loadGameweekById(options.gameweekId);
+    gameweek = await loadGameweekSummary(options.gameweekId);
   } else {
     gameweek = await fetchLatestPublishedGameweek();
     if (!gameweek) {
       // Fall back to current gameweek (selection still open / not published yet).
       const { fetchCurrentGameweek } = await import("@/lib/data/gameweeks.server");
-      gameweek = await fetchCurrentGameweek();
+      const current = await fetchCurrentGameweek();
+      gameweek = current
+        ? {
+            id: current.id,
+            number: current.number,
+            date: current.date,
+            gameTime: current.gameTime,
+            fantasyDeadline: current.fantasyDeadline,
+            status: current.status,
+            availablePlayerIds: [],
+            format: current.format,
+          }
+        : null;
     }
   }
 
   if (!gameweek || gameweek.id === "draft") {
     return {
       profile,
+      displayName,
       standing: null,
       gameweek: gameweek ?? {
         id: "draft",
@@ -181,7 +192,12 @@ export async function fetchManagerGameweekReview(
   }
 
   const [standing, fantasyTeam] = await Promise.all([
-    fetchStandingForManager(gameweek.id, managerId, options?.currentUserId),
+    fetchStandingForManager(
+      gameweek.id,
+      managerId,
+      displayName,
+      options?.currentUserId
+    ),
     fetchFantasyTeamForManager(gameweek.id, managerId),
   ]);
 
@@ -192,6 +208,7 @@ export async function fetchManagerGameweekReview(
   if (selections.length === 0) {
     return {
       profile,
+      displayName,
       standing,
       gameweek,
       squad: [],
@@ -202,7 +219,7 @@ export async function fetchManagerGameweekReview(
   }
 
   const playerIds = selections.map((s) => s.playerId);
-  const players = await fetchPlayersByIds(playerIds);
+  const players = await fetchPlayersByIds(playerIds, { withSeasonStats: false });
   const playerById = new Map(players.map((p) => [p.id, p]));
 
   const pointsByPlayer = new Map<string, number>();
@@ -281,6 +298,7 @@ export async function fetchManagerGameweekReview(
 
   return {
     profile,
+    displayName,
     standing,
     gameweek,
     squad,

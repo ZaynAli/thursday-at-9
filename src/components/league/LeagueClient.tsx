@@ -3,15 +3,17 @@
 import { LeagueTable } from "@/components/league/LeagueTable";
 import { PlayerStatsTable } from "@/components/league/PlayerStatsTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAppSession } from "@/context/AppSessionContext";
 import { Trophy, BarChart3 } from "lucide-react";
-import type { LeagueStanding, PlayerSeasonStats } from "@/types";
+import type { PlayerSeasonStats } from "@/types";
 
 interface LeagueClientProps {
-  standings: LeagueStanding[];
   stats: PlayerSeasonStats[];
 }
 
-export function LeagueClient({ standings, stats }: LeagueClientProps) {
+export function LeagueClient({ stats }: LeagueClientProps) {
+  const { standings } = useAppSession();
+
   return (
     <div className="space-y-6 animate-slide-up">
       <div>

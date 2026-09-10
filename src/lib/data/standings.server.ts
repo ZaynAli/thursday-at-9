@@ -1,7 +1,9 @@
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { preferPlayerName } from "@/lib/data/display-names";
 import type { LeagueStanding, PlayerSeasonStats, Profile } from "@/types";
 
-async function getCurrentSeasonId(): Promise<string | null> {
+const getCurrentSeasonId = cache(async (): Promise<string | null> => {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("seasons")
@@ -11,9 +13,61 @@ async function getCurrentSeasonId(): Promise<string | null> {
 
   if (error) throw new Error(`Failed to load season: ${error.message}`);
   return data?.id ?? null;
+});
+
+/** Map manager profile ids → display name (linked player name when available). */
+async function fetchManagerDisplayNames(
+  managerIds: string[]
+): Promise<Map<string, string>> {
+  if (managerIds.length === 0) return new Map();
+
+  const supabase = createAdminClient();
+  const { data: profileRows, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, display_name, player_id")
+    .in("id", managerIds);
+
+  if (profilesError) {
+    throw new Error(`Failed to load manager names: ${profilesError.message}`);
+  }
+
+  const playerIds = (profileRows ?? [])
+    .map((row) => row.player_id as string | null)
+    .filter((id): id is string => Boolean(id));
+
+  const playerNameById = new Map<string, string>();
+  if (playerIds.length > 0) {
+    const { data: playerRows, error: playersError } = await supabase
+      .from("players")
+      .select("id, name")
+      .in("id", playerIds);
+
+    if (playersError) {
+      throw new Error(`Failed to load player names: ${playersError.message}`);
+    }
+
+    for (const row of playerRows ?? []) {
+      playerNameById.set(row.id as string, row.name as string);
+    }
+  }
+
+  const nameByManagerId = new Map<string, string>();
+  for (const row of profileRows ?? []) {
+    const profileName = (row.display_name as string) ?? "Manager";
+    const playerId = row.player_id as string | null;
+    nameByManagerId.set(
+      row.id as string,
+      preferPlayerName(
+        profileName,
+        playerId ? playerNameById.get(playerId) : null
+      )
+    );
+  }
+
+  return nameByManagerId;
 }
 
-export async function fetchStandings(
+export const fetchStandings = cache(async function fetchStandings(
   currentUserId?: string | null
 ): Promise<LeagueStanding[]> {
   const seasonId = await getCurrentSeasonId();
@@ -48,18 +102,7 @@ export async function fetchStandings(
   if (!scoreRows?.length) return [];
 
   const managerIds = scoreRows.map((row) => row.manager_id as string);
-  const { data: profileRows, error: profilesError } = await supabase
-    .from("profiles")
-    .select("id, display_name")
-    .in("id", managerIds);
-
-  if (profilesError) {
-    throw new Error(`Failed to load manager names: ${profilesError.message}`);
-  }
-
-  const nameById = new Map(
-    (profileRows ?? []).map((row) => [row.id as string, row.display_name as string])
-  );
+  const nameById = await fetchManagerDisplayNames(managerIds);
 
   return scoreRows.map((row) => ({
     rank: row.rank ?? 0,
@@ -70,7 +113,7 @@ export async function fetchStandings(
     rankMovement: row.rank_movement as number,
     isCurrentUser: currentUserId ? row.manager_id === currentUserId : false,
   }));
-}
+});
 
 export interface PlayerSeasonAggregate {
   appearances: number;
@@ -83,70 +126,72 @@ export interface PlayerSeasonAggregate {
 }
 
 /** Season totals from published gameweeks, keyed by player id. */
-export async function fetchPlayerSeasonAggregates(): Promise<
-  Map<string, PlayerSeasonAggregate>
-> {
-  const seasonId = await getCurrentSeasonId();
-  if (!seasonId) return new Map();
+export const fetchPlayerSeasonAggregates = cache(
+  async (): Promise<Map<string, PlayerSeasonAggregate>> => {
+    const seasonId = await getCurrentSeasonId();
+    if (!seasonId) return new Map();
 
-  const supabase = createAdminClient();
+    const supabase = createAdminClient();
 
-  const { data: publishedGameweeks, error: gameweekError } = await supabase
-    .from("gameweeks")
-    .select("id, number")
-    .eq("season_id", seasonId)
-    .eq("status", "published")
-    .order("number", { ascending: false });
+    const { data: publishedGameweeks, error: gameweekError } = await supabase
+      .from("gameweeks")
+      .select("id, number")
+      .eq("season_id", seasonId)
+      .eq("status", "published")
+      .order("number", { ascending: false });
 
-  if (gameweekError) {
-    throw new Error(`Failed to load published gameweeks: ${gameweekError.message}`);
-  }
-
-  const gameweekIds = (publishedGameweeks ?? []).map((row) => row.id as string);
-  if (gameweekIds.length === 0) return new Map();
-
-  const latestGameweekId = gameweekIds[0]!;
-
-  const { data: statRows, error: statsError } = await supabase
-    .from("player_gameweek_stats")
-    .select(
-      "player_id, gameweek_id, appeared, goals, assists, defensive_stops, won, fantasy_points"
-    )
-    .in("gameweek_id", gameweekIds);
-
-  if (statsError) {
-    throw new Error(`Failed to load player stats: ${statsError.message}`);
-  }
-
-  const aggregated = new Map<string, PlayerSeasonAggregate>();
-
-  for (const row of statRows ?? []) {
-    const playerId = row.player_id as string;
-    const existing = aggregated.get(playerId) ?? {
-      appearances: 0,
-      goals: 0,
-      assists: 0,
-      defensiveStops: 0,
-      wins: 0,
-      seasonFantasyPoints: 0,
-      lastGameweekPoints: 0,
-    };
-
-    if (row.appeared) existing.appearances += 1;
-    existing.goals += (row.goals as number) ?? 0;
-    existing.assists += (row.assists as number) ?? 0;
-    existing.defensiveStops += (row.defensive_stops as number) ?? 0;
-    if (row.won) existing.wins += 1;
-    existing.seasonFantasyPoints += (row.fantasy_points as number) ?? 0;
-    if (row.gameweek_id === latestGameweekId) {
-      existing.lastGameweekPoints = (row.fantasy_points as number) ?? 0;
+    if (gameweekError) {
+      throw new Error(
+        `Failed to load published gameweeks: ${gameweekError.message}`
+      );
     }
 
-    aggregated.set(playerId, existing);
-  }
+    const gameweekIds = (publishedGameweeks ?? []).map((row) => row.id as string);
+    if (gameweekIds.length === 0) return new Map();
 
-  return aggregated;
-}
+    const latestGameweekId = gameweekIds[0]!;
+
+    const { data: statRows, error: statsError } = await supabase
+      .from("player_gameweek_stats")
+      .select(
+        "player_id, gameweek_id, appeared, goals, assists, defensive_stops, won, fantasy_points"
+      )
+      .in("gameweek_id", gameweekIds);
+
+    if (statsError) {
+      throw new Error(`Failed to load player stats: ${statsError.message}`);
+    }
+
+    const aggregated = new Map<string, PlayerSeasonAggregate>();
+
+    for (const row of statRows ?? []) {
+      const playerId = row.player_id as string;
+      const existing = aggregated.get(playerId) ?? {
+        appearances: 0,
+        goals: 0,
+        assists: 0,
+        defensiveStops: 0,
+        wins: 0,
+        seasonFantasyPoints: 0,
+        lastGameweekPoints: 0,
+      };
+
+      if (row.appeared) existing.appearances += 1;
+      existing.goals += (row.goals as number) ?? 0;
+      existing.assists += (row.assists as number) ?? 0;
+      existing.defensiveStops += (row.defensive_stops as number) ?? 0;
+      if (row.won) existing.wins += 1;
+      existing.seasonFantasyPoints += (row.fantasy_points as number) ?? 0;
+      if (row.gameweek_id === latestGameweekId) {
+        existing.lastGameweekPoints = (row.fantasy_points as number) ?? 0;
+      }
+
+      aggregated.set(playerId, existing);
+    }
+
+    return aggregated;
+  }
+);
 
 export async function fetchPlayerSeasonStats(): Promise<PlayerSeasonStats[]> {
   const aggregates = await fetchPlayerSeasonAggregates();
