@@ -7,7 +7,7 @@
  *   npm run auth:link -- your@email.com --production
  *   npm run auth:link -- your@email.com --url https://thursday-at-9.vercel.app
  *
- * Opens directly on /auth/callback so the server can set session cookies.
+ * Opens on /auth/callback (client page asks them to tap Continue before verifying).
  *
  * Requires SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL in .env.local
  * For --production, set PRODUCTION_SITE_URL in .env.local or pass --url.
