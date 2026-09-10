@@ -2,8 +2,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_JERSEY_ID } from "@/lib/jerseys";
 import { mapProfileRow } from "@/lib/data/mappers/profile";
+import { fetchManagerProfileStats } from "@/lib/data/standings.server";
 import type { ProfileRow } from "@/lib/data/db-types";
 import type { Profile } from "@/types";
+
+async function withManagerStats(profile: Profile): Promise<Profile> {
+  if (!profile.isFantasyManager) return profile;
+  const stats = await fetchManagerProfileStats(profile.id);
+  return stats ? { ...profile, ...stats } : profile;
+}
 
 export async function fetchProfileById(id: string): Promise<Profile | null> {
   const supabase = createAdminClient();
@@ -110,8 +117,9 @@ export async function fetchAuthProfile(): Promise<Profile | null> {
   const profile = await fetchProfileById(user.id);
   const resolved =
     profile ?? (await ensureProfileForAuthUser(user));
+  const withStats = await withManagerStats(resolved);
 
-  return user.email ? { ...resolved, email: user.email } : resolved;
+  return user.email ? { ...withStats, email: user.email } : withStats;
 }
 
 export async function enableFantasyManagerForPlayer(playerId: string): Promise<Profile> {

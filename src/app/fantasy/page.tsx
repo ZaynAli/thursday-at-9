@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSession, useCurrentUser } from "@/context/AppSessionContext";
 import { useFantasyTeamContext } from "@/context/FantasyTeamContext";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
+import { ScoringGuideButton } from "@/components/fantasy/ScoringGuideSheet";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { hasLineups } from "@/lib/game/status";
 import type { ManagerFantasyTeamView } from "@/lib/data/fantasy-teams";
@@ -149,7 +150,12 @@ function FantasyPageContent() {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      <GameweekHeader gameweekNumber={gameweek.number} compact />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <GameweekHeader gameweekNumber={gameweek.number} compact />
+        </div>
+        <ScoringGuideButton className="shrink-0 mt-1 border-border text-text-muted hover:text-text-primary" />
+      </div>
 
       {!canEdit && lockReason && (
         <div className="rounded-lg border border-border bg-surface px-4 py-3 flex items-start gap-3">

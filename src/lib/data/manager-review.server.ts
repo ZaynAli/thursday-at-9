@@ -22,6 +22,15 @@ export interface ManagerSquadPlayer {
   basePoints: number | null;
   /** Points counting toward the manager (captain ×2). */
   appliedPoints: number | null;
+  /** Stat line used for the point breakdown sheet (null before publish). */
+  stats: {
+    appeared: boolean;
+    won: boolean;
+    drew: boolean;
+    goals: number;
+    assists: number;
+    defensiveStops: number;
+  } | null;
 }
 
 export interface ManagerGameweekReview {
@@ -197,11 +206,25 @@ export async function fetchManagerGameweekReview(
   const playerById = new Map(players.map((p) => [p.id, p]));
 
   const pointsByPlayer = new Map<string, number>();
+  const statsByPlayer = new Map<
+    string,
+    {
+      appeared: boolean;
+      won: boolean;
+      drew: boolean;
+      goals: number;
+      assists: number;
+      defensiveStops: number;
+    }
+  >();
+
   if (showPoints) {
     const supabase = createAdminClient();
     const { data: statRows, error: statsError } = await supabase
       .from("player_gameweek_stats")
-      .select("player_id, fantasy_points")
+      .select(
+        "player_id, fantasy_points, appeared, won, drew, goals, assists, defensive_stops"
+      )
       .eq("gameweek_id", gameweek.id)
       .in("player_id", playerIds);
 
@@ -210,7 +233,16 @@ export async function fetchManagerGameweekReview(
     }
 
     for (const row of statRows ?? []) {
-      pointsByPlayer.set(row.player_id as string, (row.fantasy_points as number) ?? 0);
+      const playerId = row.player_id as string;
+      pointsByPlayer.set(playerId, (row.fantasy_points as number) ?? 0);
+      statsByPlayer.set(playerId, {
+        appeared: Boolean(row.appeared),
+        won: Boolean(row.won),
+        drew: Boolean(row.drew),
+        goals: (row.goals as number) ?? 0,
+        assists: (row.assists as number) ?? 0,
+        defensiveStops: (row.defensive_stops as number) ?? 0,
+      });
     }
   }
 
@@ -230,6 +262,16 @@ export async function fetchManagerGameweekReview(
       isCaptain: selection.isCaptain,
       basePoints,
       appliedPoints,
+      stats: showPoints
+        ? (statsByPlayer.get(selection.playerId) ?? {
+            appeared: false,
+            won: false,
+            drew: false,
+            goals: 0,
+            assists: 0,
+            defensiveStops: 0,
+          })
+        : null,
     };
   });
 

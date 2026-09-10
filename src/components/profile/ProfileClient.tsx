@@ -5,15 +5,25 @@ import { JerseyPicker } from "@/components/profile/JerseyPicker";
 import { RecentForm } from "@/components/profile/RecentForm";
 import { StatCard } from "@/components/shared/StatCard";
 import { SignOutButton } from "@/components/auth/SignOutButton";
-import { useCurrentUser, usePlayerLookup } from "@/context/AppSessionContext";
+import {
+  useAppSession,
+  useCurrentUser,
+  usePlayerLookup,
+} from "@/context/AppSessionContext";
 
 export function ProfileClient() {
   const profile = useCurrentUser();
   const playerLookup = usePlayerLookup();
+  const { standings } = useAppSession();
 
   if (!profile) return null;
 
   const player = profile.playerId ? playerLookup.get(profile.playerId) : undefined;
+  const standing = standings.find((s) => s.managerId === profile.id);
+  const managerRank = standing?.rank ?? profile.managerRank;
+  const totalFantasyPoints =
+    standing?.seasonPoints ?? profile.totalFantasyPoints ?? 0;
+  const showManagerStats = profile.isFantasyManager && managerRank != null;
 
   return (
     <div className="space-y-8 animate-slide-up max-w-2xl">
@@ -42,7 +52,7 @@ export function ProfileClient() {
         </section>
       )}
 
-      {profile.isFantasyManager && profile.managerRank != null && (
+      {showManagerStats && (
         <section>
           <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-3">
             Manager Performance
@@ -50,13 +60,10 @@ export function ProfileClient() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
               label="League Rank"
-              value={`#${profile.managerRank}`}
+              value={`#${managerRank}`}
               highlight
             />
-            <StatCard
-              label="Total Pts"
-              value={profile.totalFantasyPoints ?? 0}
-            />
+            <StatCard label="Total Pts" value={totalFantasyPoints} />
             <StatCard
               label="Avg GW"
               value={profile.averageGameweekPoints?.toFixed(1) ?? "—"}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,9 +12,10 @@ import {
   Minus,
 } from "lucide-react";
 import { SoccerPitch } from "@/components/fantasy/SoccerPitch";
+import { PlayerScoreBreakdownSheet } from "@/components/league/PlayerScoreBreakdownSheet";
 import { StatCard } from "@/components/shared/StatCard";
 import { Badge } from "@/components/ui/badge";
-import type { ManagerGameweekReview } from "@/lib/data";
+import type { ManagerGameweekReview, ManagerSquadPlayer } from "@/lib/data";
 import type { Player } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +33,11 @@ export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
     showPoints,
     isSubmitted,
   } = review;
+
+  const [selectedPlayer, setSelectedPlayer] = useState<ManagerSquadPlayer | null>(
+    null
+  );
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   const captainId = squad.find((s) => s.isCaptain)?.playerId;
   const pitchPlayers: (Player | null)[] = Array.from({ length: 5 }, (_, i) => {
@@ -62,6 +69,14 @@ export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
       playerPoints[entry.playerId] = entry.appliedPoints;
     }
   }
+
+  const openPlayer = (player: Player) => {
+    const entry = squad.find((s) => s.playerId === player.id);
+    if (!entry) return;
+    if (!showPoints) return;
+    setSelectedPlayer(entry);
+    setBreakdownOpen(true);
+  };
 
   const hasTeam = squad.length > 0;
   const gwLabel = `GW ${String(gameweek.number).padStart(2, "0")}`;
@@ -143,7 +158,14 @@ export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
               captainId={captainId}
               showPoints={showPoints}
               playerPoints={showPoints ? playerPoints : undefined}
+              onPlayerClick={showPoints ? openPlayer : undefined}
             />
+
+            {showPoints && (
+              <p className="text-[11px] text-text-muted text-center">
+                Tap a player to see how they scored
+              </p>
+            )}
 
             {showPoints && teamTotal != null && (
               <div className="text-center border-t border-border pt-4">
@@ -168,26 +190,32 @@ export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
             {showPoints && (
               <ul className="space-y-2 border-t border-border pt-3">
                 {squad.map((entry) => (
-                  <li
-                    key={entry.playerId}
-                    className="flex items-center justify-between text-sm py-1"
-                  >
-                    <span className="font-medium">
-                      {entry.name}
-                      {entry.isCaptain && (
-                        <span className="ml-1.5 text-[10px] text-lime font-semibold">
-                          (C)
-                        </span>
-                      )}
-                    </span>
-                    <span className="tabular-nums text-lime font-semibold">
-                      {entry.appliedPoints ?? 0}
-                      {entry.isCaptain && entry.basePoints != null && (
-                        <span className="text-text-muted font-normal text-xs ml-1">
-                          ({entry.basePoints}×2)
-                        </span>
-                      )}
-                    </span>
+                  <li key={entry.playerId}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlayer(entry);
+                        setBreakdownOpen(true);
+                      }}
+                      className="flex w-full items-center justify-between text-sm py-1.5 rounded-md hover:bg-surface-hover/50 transition-colors px-1 -mx-1"
+                    >
+                      <span className="font-medium text-left">
+                        {entry.name}
+                        {entry.isCaptain && (
+                          <span className="ml-1.5 text-[10px] text-lime font-semibold">
+                            (C)
+                          </span>
+                        )}
+                      </span>
+                      <span className="tabular-nums text-lime font-semibold">
+                        {entry.appliedPoints ?? 0}
+                        {entry.isCaptain && entry.basePoints != null && (
+                          <span className="text-text-muted font-normal text-xs ml-1">
+                            ({entry.basePoints}×2)
+                          </span>
+                        )}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -206,6 +234,12 @@ export function ManagerDetailClient({ review }: ManagerDetailClientProps) {
           </div>
         )}
       </section>
+
+      <PlayerScoreBreakdownSheet
+        player={selectedPlayer}
+        open={breakdownOpen}
+        onOpenChange={setBreakdownOpen}
+      />
     </div>
   );
 }

@@ -104,9 +104,6 @@ export function LeagueTable({ standings, className }: LeagueTableProps) {
             </span>
             <div className="text-right mr-1">
               <div className="text-sm tabular-nums font-semibold">{s.seasonPoints}</div>
-              <div className="text-[10px] tabular-nums text-text-muted">
-                GW {s.currentGameweekPoints}
-              </div>
             </div>
             <ChevronRight className="h-4 w-4 text-text-muted/40 shrink-0" />
           </button>

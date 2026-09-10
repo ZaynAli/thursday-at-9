@@ -3,6 +3,7 @@ import {
   fetchJerseyIdByProfileId,
 } from "@/lib/data/player-jerseys";
 import { filterUuidIds } from "@/lib/data/utils";
+import { fetchPlayerSeasonAggregates } from "@/lib/data/standings.server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapPlayerRow } from "@/lib/data/mappers/player";
 import type { PlayerRow } from "@/lib/data/db-types";
@@ -15,6 +16,28 @@ function throwQueryError(action: string, message: string): never {
     );
   }
   throw new Error(`${action}: ${message}`);
+}
+
+async function enrichPlayersWithSeasonStats(
+  players: Player[]
+): Promise<Player[]> {
+  if (players.length === 0) return players;
+
+  const aggregates = await fetchPlayerSeasonAggregates();
+  return players.map((player) => {
+    const stats = aggregates.get(player.id);
+    if (!stats) return player;
+    return {
+      ...player,
+      appearances: stats.appearances,
+      goals: stats.goals,
+      assists: stats.assists,
+      defensiveStops: stats.defensiveStops,
+      wins: stats.wins,
+      seasonFantasyPoints: stats.seasonFantasyPoints,
+      lastGameweekPoints: stats.lastGameweekPoints,
+    };
+  });
 }
 
 export async function fetchRosterPlayers(): Promise<Player[]> {
@@ -30,8 +53,11 @@ export async function fetchRosterPlayers(): Promise<Player[]> {
 
   const { data, error } = playersResult;
   if (error) throwQueryError("Failed to load players", error.message);
-  const players = ((data ?? []) as PlayerRow[]).map(mapPlayerRow);
-  return enrichPlayersWithJerseys(players, jerseyByProfileId);
+  const players = enrichPlayersWithJerseys(
+    ((data ?? []) as PlayerRow[]).map(mapPlayerRow),
+    jerseyByProfileId
+  );
+  return enrichPlayersWithSeasonStats(players);
 }
 
 /** All roster players for admin (includes inactive). */
@@ -44,8 +70,11 @@ export async function fetchAdminRosterPlayers(): Promise<Player[]> {
 
   const { data, error } = playersResult;
   if (error) throwQueryError("Failed to load players", error.message);
-  const players = ((data ?? []) as PlayerRow[]).map(mapPlayerRow);
-  return enrichPlayersWithJerseys(players, jerseyByProfileId);
+  const players = enrichPlayersWithJerseys(
+    ((data ?? []) as PlayerRow[]).map(mapPlayerRow),
+    jerseyByProfileId
+  );
+  return enrichPlayersWithSeasonStats(players);
 }
 
 export async function fetchPlayerById(id: string): Promise<Player | null> {
@@ -58,7 +87,10 @@ export async function fetchPlayerById(id: string): Promise<Player | null> {
 
   if (error) throw new Error(`Failed to load player: ${error.message}`);
   if (!data) return null;
-  return mapPlayerRow(data as PlayerRow);
+  const [player] = await enrichPlayersWithSeasonStats([
+    mapPlayerRow(data as PlayerRow),
+  ]);
+  return player ?? null;
 }
 
 export async function fetchPlayerByName(name: string): Promise<Player | null> {
@@ -71,7 +103,10 @@ export async function fetchPlayerByName(name: string): Promise<Player | null> {
 
   if (error) throw new Error(`Failed to load player: ${error.message}`);
   if (!data) return null;
-  return mapPlayerRow(data as PlayerRow);
+  const [player] = await enrichPlayersWithSeasonStats([
+    mapPlayerRow(data as PlayerRow),
+  ]);
+  return player ?? null;
 }
 
 export async function fetchPlayersByIds(ids: string[]): Promise<Player[]> {
@@ -87,11 +122,10 @@ export async function fetchPlayersByIds(ids: string[]): Promise<Player[]> {
   const { data, error } = playersResult;
   if (error) throwQueryError("Failed to load players", error.message);
   const rows = (data ?? []) as PlayerRow[];
-  const byId = new Map(
-    enrichPlayersWithJerseys(rows.map(mapPlayerRow), jerseyByProfileId).map(
-      (player) => [player.id, player]
-    )
+  const enriched = await enrichPlayersWithSeasonStats(
+    enrichPlayersWithJerseys(rows.map(mapPlayerRow), jerseyByProfileId)
   );
+  const byId = new Map(enriched.map((player) => [player.id, player]));
   return uuidIds.map((id) => byId.get(id)).filter(Boolean) as Player[];
 }
 

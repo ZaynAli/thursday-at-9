@@ -34,6 +34,14 @@ function mockSquadForManager(managerId: string): ManagerSquadPlayer[] {
       isCaptain,
       basePoints,
       appliedPoints: calculateCaptainPoints(basePoints, isCaptain),
+      stats: {
+        appeared: true,
+        won: player.wins > 0,
+        drew: false,
+        goals: Math.min(player.goals, 2),
+        assists: Math.min(player.assists, 1),
+        defensiveStops: Math.min(player.defensiveStops, 2),
+      },
     };
   });
 }
