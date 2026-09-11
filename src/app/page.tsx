@@ -29,7 +29,7 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6 lg:space-y-8 animate-slide-up">
-      <GameweekHeader gameweekNumber={gameweek.number} />
+      <GameweekHeader gameweekNumber={gameweek.number} showCountdown={false} />
 
       {!user && (
         <section className="rounded-lg border border-border bg-surface p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
