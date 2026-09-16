@@ -207,18 +207,6 @@ function FantasyPageContent() {
         <>
           <div className="flex rounded-lg bg-surface p-1 border border-border">
             <button
-              onClick={() => setMobileView("players")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-colors",
-                mobileView === "players"
-                  ? "bg-surface-elevated text-lime"
-                  : "text-text-muted"
-              )}
-            >
-              <Users className="h-4 w-4" />
-              Players
-            </button>
-            <button
               onClick={() => setMobileView("team")}
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-colors",
@@ -229,6 +217,18 @@ function FantasyPageContent() {
             >
               <LayoutGrid className="h-4 w-4" />
               My Team
+            </button>
+            <button
+              onClick={() => setMobileView("players")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-colors",
+                mobileView === "players"
+                  ? "bg-surface-elevated text-lime"
+                  : "text-text-muted"
+              )}
+            >
+              <Users className="h-4 w-4" />
+              Players
             </button>
           </div>
 
