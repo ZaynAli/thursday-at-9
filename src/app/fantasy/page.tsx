@@ -91,7 +91,7 @@ export default function FantasyPage() {
 function FantasyPageContent() {
   const { gameweek, availablePlayers } = useAppSession();
   const isDesktop = useIsDesktop();
-  const [mobileView, setMobileView] = useState<MobileView>("players");
+  const [mobileView, setMobileView] = useState<MobileView>("team");
   const [detailPlayer, setDetailPlayer] = useState<Player | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const playerPoolRef = useRef<HTMLDivElement>(null);
