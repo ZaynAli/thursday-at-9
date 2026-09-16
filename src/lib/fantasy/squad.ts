@@ -53,8 +53,13 @@ export function isFantasyTeamValid(
   }
 
   const captains = selections.filter((s) => s.isCaptain);
-  if (captains.length !== 1 && selections.length > 0) {
-    errors.push("Select exactly one Captain");
+  if (captains.length > 1) {
+    errors.push("Select exactly one captain");
+  } else if (captains.length === 0) {
+    // Require a captain whenever the squad has any picks (blocks confirm at 5).
+    if (selections.length > 0) {
+      errors.push("Select a captain");
+    }
   }
 
   return { isValid: errors.length === 0, errors };

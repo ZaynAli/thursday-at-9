@@ -24,7 +24,7 @@ export const DEFAULT_FANTASY_DEADLINE = {
 } as const;
 
 export const SQUAD_SIZE = 5;
-export const FANTASY_BUDGET = 35;
+export const FANTASY_BUDGET = 37;
 export const DEFENSIVE_STOP_SCORING_CAP = 3;
 
 export const SKILL_LEVEL_PRICES: Record<1 | 2 | 3 | 4 | 5, number> = {

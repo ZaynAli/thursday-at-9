@@ -11,10 +11,11 @@ import { useAppSession, useCurrentUser } from "@/context/AppSessionContext";
 import { useFantasyTeamContext } from "@/context/FantasyTeamContext";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { ScoringGuideButton } from "@/components/fantasy/ScoringGuideSheet";
+import { OtherManagersTeams } from "@/components/fantasy/OtherManagersTeams";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { hasLineups } from "@/lib/game/status";
-import type { ManagerFantasyTeamView } from "@/lib/data/fantasy-teams";
 import type { Player } from "@/types";
+import { SQUAD_SIZE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Users, LayoutGrid, CheckCircle2, Loader2, Lock } from "lucide-react";
 
@@ -341,6 +342,18 @@ function SubmitSection({
           ? "Save failed"
           : null;
 
+  const confirmLabel = (() => {
+    if (validation.isValid) {
+      return isSubmitted ? "Update Team" : "Confirm Team";
+    }
+    const missing = SQUAD_SIZE - selections;
+    if (missing > 0) return `Select ${missing} more`;
+    if (validation.errors.some((error) => /captain/i.test(error))) {
+      return "Select a captain";
+    }
+    return validation.errors[0] ?? "Complete your team";
+  })();
+
   return (
     <div className="mt-4 space-y-2">
       {!canEdit && isSubmitted && (
@@ -375,11 +388,7 @@ function SubmitSection({
           ) : (
             <CheckCircle2 className="h-4 w-4 mr-2" />
           )}
-          {validation.isValid
-            ? isSubmitted
-              ? "Update Team"
-              : "Confirm Team"
-            : `Select ${5 - selections} more`}
+          {confirmLabel}
         </Button>
       ) : (
         isSubmitted && (
@@ -390,47 +399,5 @@ function SubmitSection({
         )
       )}
     </div>
-  );
-}
-
-function OtherManagersTeams({
-  teams,
-  roster,
-}: {
-  teams: ManagerFantasyTeamView[];
-  roster: Player[];
-}) {
-  const lookup = new Map(roster.map((player) => [player.id, player]));
-
-  return (
-    <section className="rounded-lg border border-border bg-surface p-4 space-y-4">
-      <div>
-        <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase">
-          Submitted Teams
-        </h2>
-        <p className="text-sm text-text-muted mt-1">
-          Visible after selection locks — {teams.length} manager{teams.length === 1 ? "" : "s"} submitted.
-        </p>
-      </div>
-      <div className="space-y-3">
-        {teams.map((team) => (
-          <div
-            key={team.managerId}
-            className="rounded-md border border-border/70 bg-surface-elevated px-3 py-2.5"
-          >
-            <p className="text-sm font-medium">{team.managerName}</p>
-            <p className="text-xs text-text-muted mt-1">
-              {team.selections
-                .map((selection) => {
-                  const player = lookup.get(selection.playerId);
-                  const captain = selection.isCaptain ? " (C)" : "";
-                  return `${player?.name ?? "Player"}${captain}`;
-                })
-                .join(" · ")}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }

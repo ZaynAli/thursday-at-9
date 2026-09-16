@@ -169,10 +169,18 @@ export function useFantasyTeam({
   const confirmTeam = useCallback(async () => {
     if (!canEdit) return false;
 
+    const pending = latestSelectionsRef.current;
+    const validation = isFantasyTeamValid(pending, availablePlayers);
+    if (!validation.isValid) {
+      setSaveStatus("error");
+      setSaveError(validation.errors[0] ?? "Complete your team before confirming.");
+      return false;
+    }
+
     setConfirmPending(true);
     setSaveError(null);
 
-    const result = await saveFantasyTeamAction(gameweekId, latestSelectionsRef.current, true);
+    const result = await saveFantasyTeamAction(gameweekId, pending, true);
     setConfirmPending(false);
 
     if (!result.ok) {
@@ -187,7 +195,7 @@ export function useFantasyTeam({
     }
     setSaveStatus("saved");
     return true;
-  }, [canEdit, gameweekId]);
+  }, [canEdit, gameweekId, availablePlayers]);
 
   const isSelected = useCallback(
     (playerId: string) => selections.some((selection) => selection.playerId === playerId),
