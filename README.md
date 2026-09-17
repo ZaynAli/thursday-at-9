@@ -61,7 +61,7 @@ Configured in `src/lib/constants.ts`:
 
 - Thursday 9:30 PM ET kickoff · fantasy locks at kickoff (unless admin locks earlier)
 - Squad of 5 · $37.0m budget · captain scores 2×
-- Scoring: appearance +2, win +3, draw +1, goal +4, assist +3, stop +2 (max 3)
+- Scoring: appearance +2, win +3, draw +1, goal +4, assist +3, stop +2 (max 5)
 
 ## Project structure
 

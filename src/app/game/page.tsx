@@ -10,6 +10,7 @@ export default async function GamePage() {
       goals: stat.goals,
       assists: stat.assists,
       defensiveStops: stat.defensiveStops,
+      fantasyPoints: stat.fantasyPoints,
     })) ?? [];
 
   return <GameHubClient initialPlayerStats={playerStats} />;

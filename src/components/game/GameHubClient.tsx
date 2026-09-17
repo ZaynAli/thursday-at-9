@@ -29,6 +29,7 @@ export interface GamePlayerStat {
   goals: number;
   assists: number;
   defensiveStops: number;
+  fantasyPoints?: number;
 }
 
 interface GameHubClientProps {
@@ -41,6 +42,13 @@ function formatStatLine(stat: GamePlayerStat): string | undefined {
   if (stat.assists > 0) parts.push(`${stat.assists}A`);
   if (stat.defensiveStops > 0) parts.push(`${stat.defensiveStops}D`);
   return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
+function formatPitchLine(stat: GamePlayerStat): string | undefined {
+  if (stat.fantasyPoints != null) {
+    return `${stat.fantasyPoints} pts`;
+  }
+  return formatStatLine(stat);
 }
 
 export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
@@ -89,10 +97,16 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
   const playerStatLines = useMemo(() => {
     const lines: Record<string, string> = {};
     for (const stat of initialPlayerStats) {
-      const line = formatStatLine(stat);
+      const line = formatPitchLine(stat);
       if (line) lines[stat.playerId] = line;
     }
     return lines;
+  }, [initialPlayerStats]);
+
+  const fantasyLeaderboard = useMemo(() => {
+    return [...initialPlayerStats]
+      .filter((s) => s.fantasyPoints != null)
+      .sort((a, b) => (b.fantasyPoints ?? 0) - (a.fantasyPoints ?? 0));
   }, [initialPlayerStats]);
 
   const topScorers = useMemo(() => {
@@ -254,6 +268,42 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
           <p className="mt-3 text-xs text-danger text-center">{saveError}</p>
         )}
       </section>
+
+      {gameFinished && fantasyLeaderboard.length > 0 && (
+        <section className="surface-card p-4">
+          <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-3">
+            Fantasy Points
+          </h2>
+          <ul className="space-y-2">
+            {fantasyLeaderboard.map((stat, index) => {
+              const player = playerLookup.get(stat.playerId);
+              if (!player) return null;
+              const breakdown = formatStatLine(stat);
+              return (
+                <li
+                  key={stat.playerId}
+                  className="flex items-center gap-3 text-sm py-1.5 border-b border-border/50 last:border-0"
+                >
+                  <span className="w-5 text-xs tabular-nums text-text-muted text-right">
+                    {index + 1}
+                  </span>
+                  <span className="flex-1 font-medium min-w-0 truncate">
+                    {player.name}
+                  </span>
+                  {breakdown && (
+                    <span className="text-[11px] text-text-muted tabular-nums shrink-0">
+                      {breakdown}
+                    </span>
+                  )}
+                  <span className="text-lime text-sm font-semibold tabular-nums w-12 text-right shrink-0">
+                    {stat.fantasyPoints}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {gameFinished && topScorers.length > 0 && (
         <section className="surface-card p-4">

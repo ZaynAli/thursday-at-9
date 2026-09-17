@@ -13,6 +13,8 @@ export interface PlayerResultInput {
   goals: number;
   assists: number;
   defensiveStops: number;
+  /** Fantasy points for this GW when results exist (computed or published). */
+  fantasyPoints?: number;
 }
 
 export interface GameweekResultsInput {
@@ -40,6 +42,10 @@ interface PlayerGameweekStatsRow {
   goals: number;
   assists: number;
   defensive_stops: number;
+  appeared: boolean | null;
+  won: boolean | null;
+  drew: boolean | null;
+  fantasy_points: number | null;
 }
 
 interface FantasyTeamRow {
@@ -112,12 +118,18 @@ export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSna
 
   const { data: statRows, error: statsError } = await supabase
     .from("player_gameweek_stats")
-    .select("player_id, team_side, goals, assists, defensive_stops")
+    .select(
+      "player_id, team_side, goals, assists, defensive_stops, appeared, won, drew, fantasy_points"
+    )
     .eq("gameweek_id", gameweek.id);
 
   if (statsError) {
     throwResultsError("Failed to load player stats", statsError.message);
   }
+
+  const teamAScore = matchRow?.team_a_score ?? null;
+  const teamBScore = matchRow?.team_b_score ?? null;
+  const hasFinalScore = teamAScore != null && teamBScore != null;
 
   const statsByPlayer = new Map(
     ((statRows ?? []) as PlayerGameweekStatsRow[]).map((row) => [row.player_id, row])
@@ -128,13 +140,36 @@ export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSna
     const assignment = gameweek.teamAssignments?.[playerId];
     const defaultSide =
       assignment === "white" ? "a" : assignment === "color" ? "b" : "a";
+    const teamSide = saved?.team_side ?? defaultSide;
+    const goals = saved?.goals ?? 0;
+    const assists = saved?.assists ?? 0;
+    const defensiveStops = saved?.defensive_stops ?? 0;
+
+    let fantasyPoints: number | undefined;
+    if (saved?.fantasy_points != null) {
+      fantasyPoints = saved.fantasy_points;
+    } else if (saved && hasFinalScore) {
+      const outcome =
+        saved.won != null || saved.drew != null
+          ? { won: Boolean(saved.won), drew: Boolean(saved.drew) }
+          : deriveMatchOutcome(teamSide, teamAScore, teamBScore);
+      fantasyPoints = calculatePlayerFantasyPoints({
+        appeared: saved.appeared ?? true,
+        won: outcome.won,
+        drew: outcome.drew,
+        goals,
+        assists,
+        defensiveStops,
+      });
+    }
 
     return {
       playerId,
-      teamSide: saved?.team_side ?? defaultSide,
-      goals: saved?.goals ?? 0,
-      assists: saved?.assists ?? 0,
-      defensiveStops: saved?.defensive_stops ?? 0,
+      teamSide,
+      goals,
+      assists,
+      defensiveStops,
+      fantasyPoints,
     };
   });
 
@@ -144,8 +179,8 @@ export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSna
     gameweekStatus: gameweek.status,
     teamAName: matchRow?.team_a_name ?? gameweek.teamWhiteName ?? "White",
     teamBName: matchRow?.team_b_name ?? gameweek.teamColorName ?? "Colours",
-    teamAScore: matchRow?.team_a_score ?? null,
-    teamBScore: matchRow?.team_b_score ?? null,
+    teamAScore,
+    teamBScore,
     playerStats,
     isPublished: gameweek.status === "published",
   };
