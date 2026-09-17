@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MatchFormationPitch } from "@/components/game/MatchFormationPitch";
-import { Countdown } from "@/components/home/GameweekHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { useAppSession, usePlayerLookup } from "@/context/AppSessionContext";
@@ -85,10 +84,6 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
   }, [gameweek.teamFormation, gameweek.teamAssignments, gameweek.format]);
 
   const gameDate = useMemo(() => new Date(gameweek.date), [gameweek.date]);
-  const countdownTarget = useMemo(
-    () => new Date(gameweek.fantasyDeadline || gameweek.date),
-    [gameweek.fantasyDeadline, gameweek.date]
-  );
   const showLineups = hasLineups(gameweek.status) && gameweek.teamAssignments;
   const gameFinished = isGameComplete(gameweek.status);
   const hasScores =
@@ -200,13 +195,6 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
             {getGameStatusLabel(gameweek.status)}
           </Badge>
         </div>
-
-        {!gameFinished && (
-          <div className="rounded-lg border border-border bg-surface/60 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <span className="text-xs text-text-muted">Kickoff in</span>
-            <Countdown target={countdownTarget} label="" compact />
-          </div>
-        )}
       </header>
 
       {hasScores && (

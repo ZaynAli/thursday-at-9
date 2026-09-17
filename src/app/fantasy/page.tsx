@@ -139,7 +139,7 @@ function FantasyPageContent() {
   if (!hydrated) {
     return (
       <div className="space-y-6">
-        <GameweekHeader gameweekNumber={gameweek.number} compact />
+        <GameweekHeader gameweekNumber={gameweek.number} compact showCountdown={false} />
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-16 rounded-lg bg-surface-elevated animate-pulse" />
@@ -153,7 +153,7 @@ function FantasyPageContent() {
     <div className="space-y-4 lg:space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <GameweekHeader gameweekNumber={gameweek.number} compact />
+          <GameweekHeader gameweekNumber={gameweek.number} compact showCountdown={false} />
         </div>
         <ScoringGuideButton className="shrink-0 mt-1 border-border text-text-muted hover:text-text-primary" />
       </div>
