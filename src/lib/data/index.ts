@@ -17,6 +17,8 @@ export {
 } from "@/lib/data/profiles";
 export {
   getCurrentGameweek,
+  getAdminSetupGameweek,
+  getGameweekNeedingResults,
   getCurrentGameweekId,
   getLatestRecap,
   CURRENT_GAMEWEEK_ID,
@@ -44,3 +46,9 @@ export {
   getGameweekResultsSnapshot,
   type GameweekResultsSnapshot,
 } from "@/lib/data/results";
+export {
+  getManagerPicksSnapshot,
+  type ManagerPicksSnapshot,
+  type ManagerPickRow,
+  type ManagerPickStatus,
+} from "@/lib/data/manager-picks";

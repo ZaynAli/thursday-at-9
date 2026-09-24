@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Calendar, ClipboardList, ChevronRight, UserPlus } from "lucide-react";
+import { Calendar, ClipboardList, ChevronRight, UserPlus, UserCheck } from "lucide-react";
 import {
-  getCurrentGameweek,
+  getAdminSetupGameweek,
   getCurrentUser,
   getFantasyManagers,
   getPendingInvites,
@@ -24,6 +24,12 @@ const sections = [
     icon: Calendar,
   },
   {
+    href: "/admin/managers",
+    title: "Manager picks",
+    description: "See who hasn’t saved, who’s drafting, and who’s confirmed",
+    icon: UserCheck,
+  },
+  {
     href: "/admin/results",
     title: "Results",
     description: "Enter scores, stats, and publish gameweeks",
@@ -34,7 +40,7 @@ const sections = [
 export default async function AdminOverviewPage() {
   const [gameweek, managers, roster, pendingInvites, noProfile, user] =
     await Promise.all([
-      getCurrentGameweek(),
+      getAdminSetupGameweek(),
       getFantasyManagers(),
       getRosterPlayers(),
       getPendingInvites(),

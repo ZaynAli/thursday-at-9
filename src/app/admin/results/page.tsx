@@ -1,18 +1,20 @@
 import { AdminResultsClient } from "@/components/admin/AdminResultsClient";
 import {
   getAvailablePlayers,
-  getCurrentGameweek,
   getDataSource,
+  getGameweekNeedingResults,
   getGameweekResultsSnapshot,
 } from "@/lib/data";
 
 export default async function AdminResultsPage() {
   const [gameweek, snapshot] = await Promise.all([
-    getCurrentGameweek(),
+    getGameweekNeedingResults(),
     getGameweekResultsSnapshot(),
   ]);
 
-  const sessionPlayers = await getAvailablePlayers(gameweek.availablePlayerIds);
+  const sessionPlayers = gameweek
+    ? await getAvailablePlayers(gameweek.availablePlayerIds)
+    : [];
 
   return (
     <AdminResultsClient

@@ -1,5 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchCurrentGameweek } from "@/lib/data/gameweeks.server";
+import {
+  fetchGameweekById,
+  fetchGameweekNeedingResults,
+} from "@/lib/data/gameweeks.server";
 import { fetchPlayersByIds } from "@/lib/data/players.server";
 import {
   calculatePlayerFantasyPoints,
@@ -96,13 +99,16 @@ async function getCurrentSeasonId(): Promise<string> {
 }
 
 async function loadGameweekForResults(gameweekId: string) {
-  const current = await fetchCurrentGameweek();
-  if (current?.id === gameweekId) return current;
-  throw new Error("Only the current gameweek can be updated from results.");
+  const gameweek = await fetchGameweekById(gameweekId);
+  if (!gameweek) throw new Error("Gameweek not found.");
+  if (gameweek.status === "published") {
+    throw new Error("This gameweek is already published.");
+  }
+  return gameweek;
 }
 
 export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSnapshot | null> {
-  const gameweek = await fetchCurrentGameweek();
+  const gameweek = await fetchGameweekNeedingResults();
   if (!gameweek || gameweek.id === "draft") return null;
 
   const supabase = createAdminClient();
@@ -182,7 +188,7 @@ export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSna
     teamAScore,
     teamBScore,
     playerStats,
-    isPublished: gameweek.status === "published",
+    isPublished: false,
   };
 }
 
@@ -276,7 +282,7 @@ export async function saveGameweekResults(input: GameweekResultsInput): Promise<
     throwResultsError("Failed to update gameweek status", statusError.message);
   }
 
-  const updated = await fetchCurrentGameweek();
+  const updated = await fetchGameweekById(input.gameweekId);
   if (!updated) throw new Error("Failed to reload gameweek.");
   return { ...updated, status: "results_pending" };
 }
@@ -494,7 +500,7 @@ export async function publishGameweek(gameweekId: string): Promise<Gameweek> {
     throwResultsError("Failed to publish gameweek", publishError.message);
   }
 
-  const updated = await fetchCurrentGameweek();
+  const updated = await fetchGameweekById(gameweekId);
   if (!updated) throw new Error("Failed to reload gameweek.");
   return { ...updated, status: "published" };
 }

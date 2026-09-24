@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Calendar, ClipboardList } from "lucide-react";
+import { Users, Calendar, ClipboardList, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const adminNav = [
   { href: "/admin", label: "Overview", icon: ClipboardList, exact: true },
   { href: "/admin/players", label: "Players", icon: Users },
   { href: "/admin/gameweek", label: "Gameweek", icon: Calendar },
+  { href: "/admin/managers", label: "Picks", icon: UserCheck },
   { href: "/admin/results", label: "Results", icon: ClipboardList },
 ];
 

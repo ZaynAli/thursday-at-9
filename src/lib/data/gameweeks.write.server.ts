@@ -2,7 +2,10 @@ import { DEFAULT_FANTASY_DEADLINE, GAME_TIME } from "@/lib/constants";
 import { easternDateTimeToIso } from "@/lib/gameweek-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapGameweekRow } from "@/lib/data/mappers/gameweek";
-import { fetchCurrentGameweek } from "@/lib/data/gameweeks.server";
+import {
+  fetchCurrentGameweek,
+  fetchNextGameweekNumber,
+} from "@/lib/data/gameweeks.server";
 import type { GameweekRow } from "@/lib/data/db-types";
 import {
   formationFromSlotMap,
@@ -90,20 +93,6 @@ async function getOrCreateCurrentSeasonId(): Promise<string> {
 
   if (error) throwGameweekError("Failed to create season", error.message);
   return data.id;
-}
-
-async function getNextGameweekNumber(seasonId: string): Promise<number> {
-  const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("gameweeks")
-    .select("number")
-    .eq("season_id", seasonId)
-    .order("number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throwGameweekError("Failed to load gameweek number", error.message);
-  return (data?.number ?? 0) + 1;
 }
 
 async function replaceGameweekPlayers(
@@ -329,7 +318,14 @@ export async function saveGameweekSession(
   const isNew = !gameweekId || gameweekId === "draft";
 
   if (isNew) {
-    gameweekNumber = await getNextGameweekNumber(seasonId);
+    try {
+      gameweekNumber = await fetchNextGameweekNumber(seasonId);
+    } catch (error) {
+      throwGameweekError(
+        "Failed to load gameweek number",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
     const { data, error } = await supabase
       .from("gameweeks")
       .insert({

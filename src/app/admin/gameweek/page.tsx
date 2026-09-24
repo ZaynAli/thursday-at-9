@@ -1,18 +1,22 @@
 import { AdminGameweekClient } from "@/components/admin/AdminGameweekClient";
 import {
-  getCurrentGameweek,
+  getAdminSetupGameweek,
   getFantasyManagers,
   getRosterPlayers,
 } from "@/lib/data";
 import { getDataSource } from "@/lib/data/config";
+import { fetchNextGameweekNumber } from "@/lib/data/gameweeks.server";
 import { fetchLatestGameweekNotification } from "@/lib/data/gameweeks.write.server";
 
 export default async function AdminGameweekPage() {
-  const [gameweek, rosterPlayers, managers] = await Promise.all([
-    getCurrentGameweek(),
-    getRosterPlayers(),
-    getFantasyManagers(),
-  ]);
+  const dataSource = getDataSource();
+  const [gameweek, rosterPlayers, managers, nextGameweekNumber] =
+    await Promise.all([
+      getAdminSetupGameweek(),
+      getRosterPlayers(),
+      getFantasyManagers(),
+      dataSource === "mock" ? Promise.resolve(2) : fetchNextGameweekNumber(),
+    ]);
 
   const lastNotification =
     gameweek.id !== "draft"
@@ -24,8 +28,9 @@ export default async function AdminGameweekPage() {
       gameweek={gameweek}
       rosterPlayers={rosterPlayers}
       fantasyManagerCount={managers.length}
-      dataSource={getDataSource()}
+      dataSource={dataSource}
       lastNotification={lastNotification}
+      nextGameweekNumber={nextGameweekNumber}
     />
   );
 }

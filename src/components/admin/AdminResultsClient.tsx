@@ -197,7 +197,8 @@ export function AdminResultsClient({
   if (!snapshot) {
     return (
       <div className="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">
-        No active gameweek session yet. Set up and lock a gameweek before entering results.
+        No active gameweek for results. Lock a session first — or finish entering
+        scores for any locked week before starting the next one.
       </div>
     );
   }

@@ -12,6 +12,7 @@ import {
   saveGameweekSessionAction,
 } from "@/lib/admin/gameweek-actions";
 import { NOTIFY_MESSAGE_TEMPLATE } from "@/lib/onboarding.constants";
+import { getNextGameDate } from "@/lib/gameweek-timing";
 import {
   getFormatConfig,
   type GameFormat,
@@ -26,7 +27,7 @@ import {
 import type { DataSource } from "@/lib/data/config";
 import type { Gameweek, Player } from "@/types";
 import { cn } from "@/lib/utils";
-import { Bell, Lock, Users, CheckCircle2, Loader2, Save } from "lucide-react";
+import { Bell, Lock, Users, CheckCircle2, Loader2, Save, Plus } from "lucide-react";
 
 function buildInitialAssignments(
   playerIds: string[],
@@ -65,6 +66,8 @@ interface AdminGameweekClientProps {
   fantasyManagerCount: number;
   dataSource: DataSource;
   lastNotification?: { sentAt: string; recipientCount: number } | null;
+  /** Next unused GW number in the current season (for "Start new session"). */
+  nextGameweekNumber: number;
 }
 
 export function AdminGameweekClient({
@@ -73,6 +76,7 @@ export function AdminGameweekClient({
   fantasyManagerCount,
   dataSource,
   lastNotification,
+  nextGameweekNumber,
 }: AdminGameweekClientProps) {
   const router = useRouter();
   const initialSelectedIds = filterValidPlayerIds(
@@ -104,8 +108,11 @@ export function AdminGameweekClient({
   const [isSaving, setIsSaving] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
+  /** Local draft started via "Start new session" — ignore server props until refresh after save. */
+  const [draftingNext, setDraftingNext] = useState(false);
 
   useEffect(() => {
+    if (draftingNext) return;
     setGameweekId(initialGameweek.id === "draft" ? null : initialGameweek.id);
     setGameweekNumber(initialGameweek.number);
     setStatus(initialGameweek.status);
@@ -117,7 +124,7 @@ export function AdminGameweekClient({
     setTeamWhiteName(initialGameweek.teamWhiteName ?? DEFAULT_TEAM_NAMES.white);
     setTeamColorName(initialGameweek.teamColorName ?? DEFAULT_TEAM_NAMES.color);
     setNotifiedAt(lastNotification?.sentAt ?? null);
-  }, [initialGameweek, lastNotification, rosterPlayers]);
+  }, [initialGameweek, lastNotification, rosterPlayers, draftingNext]);
 
   const maxPlayers = getMaxSessionPlayers(format);
   const formatConfig = getFormatConfig(format);
@@ -127,6 +134,7 @@ export function AdminGameweekClient({
   );
   const selectionOpen = status === "selection_open";
   const isBusy = isSaving || isOpening || isLocking;
+  const canStartNewSession = dataSource !== "mock" && gameweekId !== null;
 
   const sessionInput = () => ({
     gameweekId,
@@ -140,6 +148,7 @@ export function AdminGameweekClient({
   });
 
   const applyGameweekResult = (gameweek: Gameweek) => {
+    setDraftingNext(false);
     setGameweekId(gameweek.id);
     setGameweekNumber(gameweek.number);
     setStatus(gameweek.status);
@@ -150,6 +159,21 @@ export function AdminGameweekClient({
     setAssignments(buildInitialAssignments(ids, gameweek.teamAssignments));
     setTeamWhiteName(gameweek.teamWhiteName ?? DEFAULT_TEAM_NAMES.white);
     setTeamColorName(gameweek.teamColorName ?? DEFAULT_TEAM_NAMES.color);
+  };
+
+  const startNewSession = () => {
+    setError(null);
+    setDraftingNext(true);
+    setGameweekId(null);
+    setGameweekNumber(nextGameweekNumber);
+    setStatus("draft");
+    setGameDate(toDateInputValue(getNextGameDate().toISOString()));
+    setFormat("7v7");
+    setSelectedIds([]);
+    setAssignments({});
+    setTeamWhiteName(DEFAULT_TEAM_NAMES.white);
+    setTeamColorName(DEFAULT_TEAM_NAMES.color);
+    setNotifiedAt(null);
   };
 
   const handleFormatChange = (next: GameFormat) => {
@@ -282,11 +306,34 @@ export function AdminGameweekClient({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Weekly session</h2>
-        <p className="text-sm text-text-muted mt-1">
-          Choose format, pick session players, assign teams, save, then notify
-          fantasy managers.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Weekly session</h2>
+            <p className="text-sm text-text-muted mt-1">
+              Choose format, pick session players, assign teams, save, then notify
+              fantasy managers.
+            </p>
+          </div>
+          {canStartNewSession && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBusy}
+              onClick={startNewSession}
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              Start new session
+            </Button>
+          )}
+        </div>
+        {draftingNext && (
+          <p className="text-sm text-lime/90 mt-2 rounded-lg border border-lime/30 bg-lime/5 px-3 py-2">
+            Drafting GW {String(nextGameweekNumber).padStart(2, "0")} — pick players
+            and save to make this the live match week.
+          </p>
+        )}
         {dataSource === "mock" && (
           <p className="text-sm text-amber-200/90 mt-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
             Mock data mode — configure Supabase to persist gameweeks.
