@@ -53,8 +53,8 @@ export function LeagueTable({ standings, className }: LeagueTableProps) {
                     {s.managerName}
                   </Link>
                 </td>
-                <td className="py-3.5 text-right tabular-nums text-sm text-text-secondary pr-3">
-                  {s.currentGameweekPoints}
+                <td className="py-3.5 text-right tabular-nums text-sm text-lime font-medium pr-3">
+                  +{s.currentGameweekPoints}
                 </td>
                 <td className="py-3.5 pr-4 text-right tabular-nums text-sm font-semibold">
                   {s.seasonPoints}
@@ -97,8 +97,8 @@ export function LeagueTable({ standings, className }: LeagueTableProps) {
               <div className="text-sm tabular-nums font-semibold">
                 {s.seasonPoints}
               </div>
-              <div className="text-[11px] tabular-nums text-text-muted">
-                GW {s.currentGameweekPoints}
+              <div className="text-[11px] tabular-nums text-lime font-medium">
+                +{s.currentGameweekPoints}
               </div>
             </div>
             <ChevronRight className="h-4 w-4 text-text-muted/40 shrink-0" />
