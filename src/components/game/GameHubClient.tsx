@@ -22,6 +22,7 @@ import {
 import type { SessionTeam } from "@/lib/session-formats";
 import { GAME_TIME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import type { Gameweek } from "@/types";
 
 export interface GamePlayerStat {
   playerId: string;
@@ -32,6 +33,8 @@ export interface GamePlayerStat {
 }
 
 interface GameHubClientProps {
+  /** Prefer the Match-hub gameweek (may be last published while admin drafts next). */
+  matchGameweek?: Gameweek | null;
   initialPlayerStats?: GamePlayerStat[];
 }
 
@@ -50,9 +53,14 @@ function formatPitchLine(stat: GamePlayerStat): string | undefined {
   return formatStatLine(stat);
 }
 
-export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
+export function GameHubClient({
+  matchGameweek = null,
+  initialPlayerStats = [],
+}: GameHubClientProps) {
   const router = useRouter();
-  const { gameweek, dataSource, currentUser: user } = useAppSession();
+  const { gameweek: sessionGameweek, dataSource, currentUser: user } =
+    useAppSession();
+  const gameweek = matchGameweek ?? sessionGameweek;
   const playerLookup = usePlayerLookup();
   const isAdmin = user?.isAdmin ?? false;
 
@@ -86,7 +94,7 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
   const gameDate = useMemo(() => new Date(gameweek.date), [gameweek.date]);
   const showLineups = hasLineups(gameweek.status) && gameweek.teamAssignments;
   const gameFinished = isGameComplete(gameweek.status);
-  const hasScores =
+  const hasMatchScore =
     gameweek.matchScores?.white != null && gameweek.matchScores?.color != null;
 
   const playerStatLines = useMemo(() => {
@@ -197,7 +205,7 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
         </div>
       </header>
 
-      {hasScores && (
+      {hasMatchScore && (
         <section className="rounded-lg border border-border bg-surface p-4">
           <h2 className="text-xs font-semibold tracking-[0.15em] text-text-muted uppercase mb-3">
             Final Score
@@ -220,7 +228,7 @@ export function GameHubClient({ initialPlayerStats = [] }: GameHubClientProps) {
         </section>
       )}
 
-      {!hasScores && !gameFinished && (
+      {!hasMatchScore && !gameFinished && (
         <section>
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-elevated/60 px-3 py-1.5">
             <span className="text-xs font-semibold text-text-primary tabular-nums">{gameweek.format}</span>

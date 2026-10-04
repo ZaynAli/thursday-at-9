@@ -44,6 +44,7 @@ export {
 } from "@/lib/data/manager-review";
 export {
   getGameweekResultsSnapshot,
+  getMatchHubResultsSnapshot,
   type GameweekResultsSnapshot,
 } from "@/lib/data/results";
 export {

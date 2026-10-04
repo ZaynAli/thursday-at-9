@@ -48,6 +48,37 @@ export async function fetchNextGameweekNumber(
   return (data?.number ?? 0) + 1;
 }
 
+async function hydrateGameweek(row: GameweekRow): Promise<Gameweek> {
+  const supabase = createAdminClient();
+  const [{ data: poolRows }, { data: matchRow }] = await Promise.all([
+    supabase
+      .from("gameweek_players")
+      .select("player_id")
+      .eq("gameweek_id", row.id),
+    supabase.from("matches").select("*").eq("gameweek_id", row.id).maybeSingle(),
+  ]);
+
+  const playerIds = (poolRows ?? []).map(
+    (entry: { player_id: string }) => entry.player_id
+  );
+
+  let matchPlayers: MatchPlayerRow[] = [];
+  if (matchRow) {
+    const { data: assignmentRows } = await supabase
+      .from("match_players")
+      .select("player_id, team_side, position_index")
+      .eq("match_id", (matchRow as MatchRow).id);
+    matchPlayers = (assignmentRows ?? []) as MatchPlayerRow[];
+  }
+
+  return mapGameweekRow(
+    row,
+    playerIds,
+    (matchRow as MatchRow | null) ?? null,
+    matchPlayers
+  );
+}
+
 export async function fetchCurrentGameweek(): Promise<Gameweek | null> {
   const supabase = createAdminClient();
   const seasonId = await fetchCurrentSeasonId();
@@ -69,33 +100,7 @@ export async function fetchCurrentGameweek(): Promise<Gameweek | null> {
   const row = (gameweekRows?.[0] as GameweekRow | undefined) ?? null;
   if (!row) return null;
 
-  const [{ data: poolRows }, { data: matchRow }] = await Promise.all([
-    supabase
-      .from("gameweek_players")
-      .select("player_id")
-      .eq("gameweek_id", row.id),
-    supabase.from("matches").select("*").eq("gameweek_id", row.id).maybeSingle(),
-  ]);
-
-  const playerIds = (poolRows ?? []).map(
-    (entry: { player_id: string }) => entry.player_id
-  );
-
-  let matchPlayers: MatchPlayerRow[] = [];
-  if (matchRow) {
-    const { data: assignmentRows } = await supabase
-      .from("match_players")
-      .select("player_id, team_side, position_index")
-      .eq("match_id", (matchRow as MatchRow).id);
-    matchPlayers = (assignmentRows ?? []) as MatchPlayerRow[];
-  }
-
-  return mapGameweekRow(
-    row,
-    playerIds,
-    (matchRow as MatchRow | null) ?? null,
-    matchPlayers
-  );
+  return hydrateGameweek(row);
 }
 
 const RESULTS_ELIGIBLE_STATUSES = [
@@ -104,18 +109,23 @@ const RESULTS_ELIGIBLE_STATUSES = [
   "results_pending",
 ] as const;
 
-/**
- * Latest gameweek that still needs scores entered (not draft / open / published).
- * Survives starting the next session before the previous one is published.
- */
-export async function fetchGameweekNeedingResults(): Promise<Gameweek | null> {
+const MATCH_HUB_STATUSES = [
+  "selection_locked",
+  "in_progress",
+  "results_pending",
+  "published",
+] as const;
+
+async function fetchLatestGameweekWithStatuses(
+  statuses: readonly string[]
+): Promise<Gameweek | null> {
   const supabase = createAdminClient();
   const seasonId = await fetchCurrentSeasonId();
 
   let query = supabase
     .from("gameweeks")
     .select("*")
-    .in("status", [...RESULTS_ELIGIBLE_STATUSES])
+    .in("status", [...statuses])
     .order("number", { ascending: false })
     .limit(1);
 
@@ -126,39 +136,38 @@ export async function fetchGameweekNeedingResults(): Promise<Gameweek | null> {
   const { data: gameweekRows, error: gameweekError } = await query;
 
   if (gameweekError) {
-    throw new Error(`Failed to load results gameweek: ${gameweekError.message}`);
+    throw new Error(`Failed to load gameweek: ${gameweekError.message}`);
   }
 
   const row = (gameweekRows?.[0] as GameweekRow | undefined) ?? null;
   if (!row) return null;
 
-  const [{ data: poolRows }, { data: matchRow }] = await Promise.all([
-    supabase
-      .from("gameweek_players")
-      .select("player_id")
-      .eq("gameweek_id", row.id),
-    supabase.from("matches").select("*").eq("gameweek_id", row.id).maybeSingle(),
-  ]);
+  return hydrateGameweek(row);
+}
 
-  const playerIds = (poolRows ?? []).map(
-    (entry: { player_id: string }) => entry.player_id
-  );
+/**
+ * Latest gameweek that still needs scores entered (not draft / open / published).
+ * Survives starting the next session before the previous one is published.
+ */
+export async function fetchGameweekNeedingResults(): Promise<Gameweek | null> {
+  return fetchLatestGameweekWithStatuses(RESULTS_ELIGIBLE_STATUSES);
+}
 
-  let matchPlayers: MatchPlayerRow[] = [];
-  if (matchRow) {
-    const { data: assignmentRows } = await supabase
-      .from("match_players")
-      .select("player_id, team_side, position_index")
-      .eq("match_id", (matchRow as MatchRow).id);
-    matchPlayers = (assignmentRows ?? []) as MatchPlayerRow[];
+/**
+ * Gameweek shown on Match: latest locked / live / published week so scores
+ * stay visible after the next draft session is created.
+ */
+export async function fetchMatchHubGameweek(): Promise<Gameweek | null> {
+  const matchWeek = await fetchLatestGameweekWithStatuses(MATCH_HUB_STATUSES);
+  if (matchWeek) return matchWeek;
+
+  // Upcoming week with lineups assigned but not locked yet
+  const current = await fetchCurrentGameweek();
+  if (current && current.status === "selection_open" && current.teamAssignments) {
+    return current;
   }
 
-  return mapGameweekRow(
-    row,
-    playerIds,
-    (matchRow as MatchRow | null) ?? null,
-    matchPlayers
-  );
+  return current;
 }
 
 export async function fetchGameweekById(
@@ -176,31 +185,5 @@ export async function fetchGameweekById(
   }
   if (!row) return null;
 
-  const [{ data: poolRows }, { data: matchRow }] = await Promise.all([
-    supabase
-      .from("gameweek_players")
-      .select("player_id")
-      .eq("gameweek_id", row.id),
-    supabase.from("matches").select("*").eq("gameweek_id", row.id).maybeSingle(),
-  ]);
-
-  const playerIds = (poolRows ?? []).map(
-    (entry: { player_id: string }) => entry.player_id
-  );
-
-  let matchPlayers: MatchPlayerRow[] = [];
-  if (matchRow) {
-    const { data: assignmentRows } = await supabase
-      .from("match_players")
-      .select("player_id, team_side, position_index")
-      .eq("match_id", (matchRow as MatchRow).id);
-    matchPlayers = (assignmentRows ?? []) as MatchPlayerRow[];
-  }
-
-  return mapGameweekRow(
-    row as GameweekRow,
-    playerIds,
-    (matchRow as MatchRow | null) ?? null,
-    matchPlayers
-  );
+  return hydrateGameweek(row as GameweekRow);
 }

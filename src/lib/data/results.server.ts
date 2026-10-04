@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fetchGameweekById,
   fetchGameweekNeedingResults,
+  fetchMatchHubGameweek,
 } from "@/lib/data/gameweeks.server";
 import { fetchPlayersByIds } from "@/lib/data/players.server";
 import {
@@ -107,10 +108,9 @@ async function loadGameweekForResults(gameweekId: string) {
   return gameweek;
 }
 
-export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSnapshot | null> {
-  const gameweek = await fetchGameweekNeedingResults();
-  if (!gameweek || gameweek.id === "draft") return null;
-
+async function buildResultsSnapshot(
+  gameweek: Gameweek
+): Promise<GameweekResultsSnapshot> {
   const supabase = createAdminClient();
   const { data: matchRow, error: matchError } = await supabase
     .from("matches")
@@ -188,8 +188,25 @@ export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSna
     teamAScore,
     teamBScore,
     playerStats,
-    isPublished: false,
+    isPublished: gameweek.status === "published",
   };
+}
+
+export async function fetchGameweekResultsSnapshot(): Promise<GameweekResultsSnapshot | null> {
+  const gameweek = await fetchGameweekNeedingResults();
+  if (!gameweek || gameweek.id === "draft") return null;
+  return buildResultsSnapshot(gameweek);
+}
+
+/** Match tab: scores + fantasy pts for the latest played / locked week. */
+export async function fetchMatchHubResultsSnapshot(): Promise<{
+  gameweek: Gameweek;
+  snapshot: GameweekResultsSnapshot;
+} | null> {
+  const gameweek = await fetchMatchHubGameweek();
+  if (!gameweek || gameweek.id === "draft") return null;
+  const snapshot = await buildResultsSnapshot(gameweek);
+  return { gameweek, snapshot };
 }
 
 export async function saveGameweekResults(input: GameweekResultsInput): Promise<Gameweek> {

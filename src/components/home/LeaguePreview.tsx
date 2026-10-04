@@ -85,8 +85,13 @@ function StandingRow({ standing }: { standing: LeagueStanding }) {
       >
         {standing.managerName}
       </span>
-      <span className="text-sm tabular-nums text-text-secondary">
-        {standing.seasonPoints}
+      <span className="text-right">
+        <span className="block text-sm tabular-nums text-text-primary font-medium">
+          {standing.seasonPoints}
+        </span>
+        <span className="block text-[11px] tabular-nums text-text-muted">
+          GW {standing.currentGameweekPoints}
+        </span>
       </span>
     </Link>
   );

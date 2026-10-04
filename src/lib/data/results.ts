@@ -2,17 +2,27 @@ import { useMockData } from "@/lib/data/config";
 import {
   fetchGameweekResultsSnapshot,
   fetchLatestRecapForUser,
+  fetchMatchHubResultsSnapshot,
   publishGameweek,
   saveGameweekResults,
   type GameweekResultsInput,
   type GameweekResultsSnapshot,
 } from "@/lib/data/results.server";
+import type { Gameweek } from "@/types";
 
 export type { GameweekResultsInput, GameweekResultsSnapshot };
 
 export async function getGameweekResultsSnapshot(): Promise<GameweekResultsSnapshot | null> {
   if (useMockData()) return null;
   return fetchGameweekResultsSnapshot();
+}
+
+export async function getMatchHubResultsSnapshot(): Promise<{
+  gameweek: Gameweek;
+  snapshot: GameweekResultsSnapshot;
+} | null> {
+  if (useMockData()) return null;
+  return fetchMatchHubResultsSnapshot();
 }
 
 export async function persistGameweekResults(input: GameweekResultsInput) {

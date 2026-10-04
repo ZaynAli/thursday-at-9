@@ -1,11 +1,32 @@
 import { GameHubClient, type GamePlayerStat } from "@/components/game/GameHubClient";
-import { getGameweekResultsSnapshot } from "@/lib/data";
+import { getMatchHubResultsSnapshot } from "@/lib/data";
+import type { Gameweek } from "@/types";
 
 export default async function GamePage() {
-  const snapshot = await getGameweekResultsSnapshot();
+  const hub = await getMatchHubResultsSnapshot();
+
+  let matchGameweek: Gameweek | null = hub?.gameweek ?? null;
+  if (
+    matchGameweek &&
+    hub?.snapshot &&
+    hub.snapshot.teamAScore != null &&
+    hub.snapshot.teamBScore != null &&
+    (matchGameweek.matchScores?.white == null ||
+      matchGameweek.matchScores?.color == null)
+  ) {
+    matchGameweek = {
+      ...matchGameweek,
+      matchScores: {
+        white: hub.snapshot.teamAScore,
+        color: hub.snapshot.teamBScore,
+      },
+      teamWhiteName: hub.snapshot.teamAName,
+      teamColorName: hub.snapshot.teamBName,
+    };
+  }
 
   const playerStats: GamePlayerStat[] =
-    snapshot?.playerStats.map((stat) => ({
+    hub?.snapshot.playerStats.map((stat) => ({
       playerId: stat.playerId,
       goals: stat.goals,
       assists: stat.assists,
@@ -13,5 +34,10 @@ export default async function GamePage() {
       fantasyPoints: stat.fantasyPoints,
     })) ?? [];
 
-  return <GameHubClient initialPlayerStats={playerStats} />;
+  return (
+    <GameHubClient
+      matchGameweek={matchGameweek}
+      initialPlayerStats={playerStats}
+    />
+  );
 }
