@@ -22,13 +22,16 @@ interface FormationShape {
 /** Outfield rows per side — DEF → MID → FWD (toward halfway line) */
 const FORMATION_BY_COUNT: Record<number, FormationShape> = {
   5: { label: "1-2-2", rows: [1, 2, 2] },
-  6: { label: "2-2-2", rows: [2, 2, 2] },
+  6: { label: "3-3", rows: [3, 3] },
   7: { label: "2-3-2", rows: [2, 3, 2] },
   8: { label: "3-3-2", rows: [3, 3, 2] },
   9: { label: "3-3-3", rows: [3, 3, 3] },
 };
 
 const ROW_ROLES: FormationRole[] = ["DEF", "MID", "FWD"];
+
+/** Two-line shapes (e.g. 3-3) skip MID so lines sit farther apart. */
+const TWO_ROW_ROLES: FormationRole[] = ["DEF", "FWD"];
 
 const WHITE_Y: Record<FormationRole, number> = {
   DEF: 78,
@@ -45,10 +48,10 @@ const COLOR_Y: Record<FormationRole, number> = {
 function rowXPositions(count: number): number[] {
   if (count <= 0) return [];
   if (count === 1) return [50];
-  if (count === 2) return [40, 60];
-  if (count === 3) return [30, 50, 70];
-  if (count === 4) return [22, 40, 60, 78];
-  return Array.from({ length: count }, (_, i) => 15 + ((i + 1) / (count + 1)) * 70);
+  if (count === 2) return [32, 68];
+  if (count === 3) return [22, 50, 78];
+  if (count === 4) return [18, 38, 62, 82];
+  return Array.from({ length: count }, (_, i) => 12 + ((i + 1) / (count + 1)) * 76);
 }
 
 function getFormationShape(count: number): FormationShape {
@@ -75,11 +78,12 @@ export function getFormationSlots(team: SessionTeam, format: GameFormat): Format
   const count = getPlayersPerSide(format);
   const shape = getFormationShape(count);
   const yMap = team === "white" ? WHITE_Y : COLOR_Y;
+  const roles = shape.rows.length === 2 ? TWO_ROW_ROLES : ROW_ROLES;
   const slots: FormationSlot[] = [];
   let index = 0;
 
   shape.rows.forEach((playersInRow, rowIndex) => {
-    const role = ROW_ROLES[Math.min(rowIndex, ROW_ROLES.length - 1)] ?? "MID";
+    const role = roles[Math.min(rowIndex, roles.length - 1)] ?? "MID";
     const xs = rowXPositions(playersInRow);
 
     xs.forEach((x) => {
