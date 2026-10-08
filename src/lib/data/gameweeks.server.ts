@@ -5,6 +5,7 @@ import type {
   MatchPlayerRow,
   MatchRow,
 } from "@/lib/data/db-types";
+import { hasLineups } from "@/lib/game/status";
 import type { Gameweek } from "@/types";
 
 async function fetchCurrentSeasonId(): Promise<string | null> {
@@ -154,20 +155,26 @@ export async function fetchGameweekNeedingResults(): Promise<Gameweek | null> {
 }
 
 /**
- * Gameweek shown on Match: latest locked / live / published week so scores
- * stay visible after the next draft session is created.
+ * Gameweek shown on Match:
+ * - Prefer the current week once it has lineups (selection open / locked / live)
+ * - Otherwise fall back to the latest locked / published week so last week's
+ *   scoreboard stays visible while the next session is still a bare draft
  */
 export async function fetchMatchHubGameweek(): Promise<Gameweek | null> {
-  const matchWeek = await fetchLatestGameweekWithStatuses(MATCH_HUB_STATUSES);
-  if (matchWeek) return matchWeek;
-
-  // Upcoming week with lineups assigned but not locked yet
   const current = await fetchCurrentGameweek();
-  if (current && current.status === "selection_open" && current.teamAssignments) {
+  if (
+    current &&
+    current.id !== "draft" &&
+    hasLineups(current.status) &&
+    current.teamAssignments &&
+    Object.keys(current.teamAssignments).length > 0
+  ) {
     return current;
   }
 
-  return current;
+  return (
+    (await fetchLatestGameweekWithStatuses(MATCH_HUB_STATUSES)) ?? current
+  );
 }
 
 export async function fetchGameweekById(
